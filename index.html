@@ -1,0 +1,2198 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<!-- Tambahkan Library Leaflet.js -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+  /* Perbaikan posisi agar elemen peta tidak menimpa popup */
+  .geo-popup-overlay { z-index: 9999 !important; }
+  .geo-legend, .geo-zoom-controls { z-index: 999 !important; }
+  .geo-datasource { z-index: 999 !important; bottom: 1.5rem !important; }
+  .leaflet-control-attribution { display: none; } /* Opsional: Sembunyikan watermark leaflet */
+</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PILAR — Platform Integrasi Laporan Akuntansi Real-time</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=Lora:ital,wght@0,600;1,500&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════
+   DESIGN TOKENS
+════════════════════════════════════════════ */
+:root {
+  /* Warna Emas Utama dari Logo */
+  --navy:       #99732E;  /* Emas Gelap (pengganti Navy) */
+  --navy-mid:   #B08A44;  /* Emas Menengah */
+  --navy-light: #C4A25E;  /* Emas Terang */
+  --navy-pale:  #F7F3E9;  /* Krem Sangat Pucat */
+
+  /* Warna Aksen Emas Lebih Cerah */
+  --orange:     #D4AF37;  /* Emas Klasik (pengganti Orange) */
+  --orange-dim: #FBF7E8;  /* Background Aksen Pucat */
+  --orange-mid: #E5C05B;  /* Emas Transisi */
+
+  /* Warna Fungsional Tetap Dipertahankan (Status) */
+  --green:      #0d9e6e;  /* Tetap Hijau untuk Validasi */
+  --green-dim:  #e6f7f2;  /*[cite: 1] */
+  --green-mid:  #10b981;  /*[cite: 1] */
+  --red:        #dc2626;  /* Tetap Merah untuk Anomali[cite: 1] */
+  --red-dim:    #fef2f2;  /*[cite: 1] */
+  --red-mid:    #ef4444;  /*[cite: 1] */
+
+  /* Background & Surface */
+  --bg:         #FAF9F6;  /* Putih 'Off-White' (seperti background logo)[cite: 1] */
+  --surface:    #ffffff;  /* Putih bersih untuk Card[cite: 1] */
+  --border:     #E5E0D3;  /* Border warna pasir halus[cite: 1] */
+  --border-2:   #D6CEBB;  /*[cite: 1] */
+
+  /* Warna Teks agar tetap kontras */
+  --text:       #3D2F14;  /* Cokelat Tua (pengganti Navy)[cite: 1] */
+  --text-2:     #665432;  /*[cite: 1] */
+  --text-3:     #8C7B5D;  /*[cite: 1] */
+  --text-4:     #B5AB98;  /*[cite: 1] */
+
+/* Kembalikan warna pendukung yang hilang */
+  --amber:      #d97706;  /* Kuning/Oranye Status[cite: 1] */
+  --amber-dim:  #fffbeb;  /*[cite: 1] */
+  --sky:        #4A6B82;  /* Biru elegan agar cocok dengan tema merah/emas */
+  --sky-dim:    #EAF0F4;  /* Background biru elegan */
+
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; scroll-behavior: smooth; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ════════════════════════════════════════════
+   UTILITIES
+════════════════════════════════════════════ */
+.hidden { display: none !important; }
+.mono { font-family: 'IBM Plex Mono', monospace; }
+.serif { font-family: 'Lora', serif; }
+
+/* ════════════════════════════════════════════
+   PAGE SYSTEM
+════════════════════════════════════════════ */
+.page { display: none; min-height: 100vh; animation: pageIn 0.35s ease both; }
+.page.active { display: flex; }
+@keyframes pageIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+/* ════════════════════════════════════════════
+   ── PAGE 1: LOGIN ──
+════════════════════════════════════════════ */
+#page-login {
+  flex-direction: row;
+  min-height: 100vh;
+}
+
+.login-left {
+  width: 42%;
+  background: var(--navy);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 3rem;
+}
+.login-left-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 80% at -20% 120%, rgba(232,101,26,0.25) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 60% at 110% -10%, rgba(2,132,199,0.2) 0%, transparent 60%),
+    linear-gradient(160deg, var(--navy) 0%, #4D160F 100%);
+}
+.login-left-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.login-left-content { position: relative; z-index: 2; }
+
+.logo-wrap { display: flex; align-items: center; gap: 1rem; margin-bottom: 3.5rem; }
+.logo-box {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 1.1rem; color: white;
+  background: transparent !important;
+  box-shadow: none;
+}
+.logo-label { color: white; }
+.logo-label .name { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.5px; }
+.logo-label .sub { font-size: 0.65rem; color: rgba(255,255,255,0.5); letter-spacing: 1.5px; text-transform: uppercase; }
+
+.hero-login h1 {
+  font-size: 2.4rem; font-weight: 800; color: white;
+  line-height: 1.15; letter-spacing: -1.5px;
+  margin-bottom: 1.25rem;
+}
+.hero-login h1 em { font-style: italic; font-family: 'Lora', serif; color: var(--orange-mid); }
+.hero-login p { font-size: 0.88rem; color: rgba(255,255,255,0.55); line-height: 1.75; max-width: 320px; }
+
+.login-stats { display: flex; flex-direction: column; gap: 0.75rem; position: relative; z-index: 2; }
+.ls-item {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.9rem 1.2rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+}
+.ls-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ls-dot.orange { background: var(--orange); box-shadow: 0 0 8px rgba(232,101,26,0.6); }
+.ls-dot.green { background: var(--green); box-shadow: 0 0 8px rgba(13,158,110,0.6); }
+.ls-dot.sky { background: #38bdf8; box-shadow: 0 0 8px rgba(56,189,248,0.6); }
+.ls-text { font-size: 0.78rem; color: rgba(255,255,255,0.7); }
+.ls-text strong { color: white; }
+
+/* Right panel */
+.login-right {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  padding: 3rem 4rem;
+  background: var(--bg);
+}
+.login-card {
+  width: 100%; max-width: 420px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 4px 40px rgba(15,39,68,0.08);
+}
+.login-card h2 { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0.35rem; }
+.login-card .subtitle { font-size: 0.82rem; color: var(--text-3); margin-bottom: 2rem; }
+
+/* Role Selector */
+.role-selector { display: flex; gap: 0.5rem; margin-bottom: 1.75rem; background: var(--bg); border-radius: 10px; padding: 4px; }
+.role-btn {
+  flex: 1; padding: 0.6rem 0.5rem;
+  border: none; border-radius: 8px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.72rem; font-weight: 600;
+  color: var(--text-3); background: transparent;
+  cursor: pointer; transition: all 0.2s; text-align: center;
+}
+.role-btn.active { background: var(--surface); color: var(--navy); box-shadow: 0 1px 6px rgba(0,0,0,0.1); }
+.role-icon { display: block; font-size: 1.1rem; margin-bottom: 0.2rem; }
+
+/* Input group */
+.field-group { margin-bottom: 1.1rem; }
+.field-label { font-size: 0.73rem; font-weight: 700; color: var(--text-2); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.35rem; letter-spacing: 0.3px; }
+.field-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 9px; font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.88rem; color: var(--text); outline: none;
+  transition: all 0.2s;
+}
+.field-input:focus { border-color: var(--navy-mid); background: white; box-shadow: 0 0 0 3px var(--navy-pale); }
+.field-input.error { border-color: var(--red); background: var(--red-dim); }
+
+.field-row { display: flex; gap: 0.75rem; }
+
+.toggle-wrap { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+.consent-toggle { display: flex; align-items: center; gap: 0.6rem; font-size: 0.75rem; color: var(--text-3); cursor: pointer; }
+.toggle-switch { width: 34px; height: 18px; background: var(--border-2); border-radius: 100px; position: relative; transition: background 0.2s; cursor: pointer; }
+.toggle-switch.on { background: var(--green); }
+.toggle-switch::after { content: ''; position: absolute; left: 3px; top: 3px; width: 12px; height: 12px; background: white; border-radius: 50%; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+.toggle-switch.on::after { left: 19px; }
+.link-sm { font-size: 0.75rem; color: var(--sky); text-decoration: none; }
+
+.btn-login {
+  width: 100%; padding: 0.9rem;
+  background: var(--navy); color: white;
+  border: none; border-radius: 10px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.9rem; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+.btn-login:hover { background: var(--navy-light); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(15,39,68,0.25); }
+
+.secure-badge {
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  margin-top: 1.25rem;
+  font-size: 0.7rem; color: var(--text-4);
+}
+.secure-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+
+/* MFA Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(15,39,68,0.6);
+  backdrop-filter: blur(4px); z-index: 999;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal-card {
+  background: var(--surface); border-radius: 20px; padding: 2.5rem;
+  max-width: 360px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal-card h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.4rem; }
+.modal-card p { font-size: 0.82rem; color: var(--text-3); margin-bottom: 1.75rem; line-height: 1.6; }
+.otp-inputs { display: flex; gap: 0.6rem; justify-content: center; margin-bottom: 1.5rem; }
+.otp-input {
+  width: 46px; height: 54px;
+  border: 2px solid var(--border); border-radius: 10px;
+  text-align: center; font-size: 1.4rem; font-weight: 700;
+  font-family: 'IBM Plex Mono', monospace; color: var(--navy);
+  background: var(--bg); outline: none; transition: all 0.15s;
+}
+.otp-input:focus { border-color: var(--navy); background: white; }
+.otp-input.filled { border-color: var(--green); background: var(--green-dim); color: var(--green); }
+.loading-spinner {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* ════════════════════════════════════════════
+   ── APP SHELL (pages 2–5) ──
+════════════════════════════════════════════ */
+.app-shell { flex: 1; display: flex; }
+
+/* Sidebar */
+.sidebar {
+  width: 240px; flex-shrink: 0;
+  background: var(--navy);
+  display: flex; flex-direction: column;
+  min-height: 100vh;
+  position: sticky; top: 0;
+}
+.sidebar-logo {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 1.5rem 1.25rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  margin-bottom: 0.75rem;
+}
+.sidebar-logo .box { width: 32px; height: 32px; border-radius: 8px; background: transparent; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; color: white; }
+.sidebar-logo .txt { font-size: 1rem; font-weight: 800; color: white; letter-spacing: -0.3px; }
+
+.sidebar-role {
+  margin: 0 1rem 1.25rem;
+  padding: 0.65rem 0.9rem;
+  background: rgba(255,255,255,0.07);
+  border-radius: 8px;
+  font-size: 0.72rem; color: rgba(255,255,255,0.6);
+}
+.sidebar-role strong { color: white; display: block; font-size: 0.82rem; margin-bottom: 0.1rem; }
+.role-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.15rem 0.5rem; border-radius: 100px;
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  margin-top: 0.35rem;
+}
+.role-badge.umkm { background: rgba(232,101,26,0.2); color: var(--orange-mid); }
+.role-badge.akuntan { background: rgba(13,158,110,0.2); color: #34d399; }
+.role-badge.lembaga { background: rgba(2,132,199,0.2); color: #38bdf8; }
+
+.nav-section { padding: 0 0.75rem; margin-bottom: 1.5rem; }
+.nav-section-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.3); padding: 0 0.5rem; margin-bottom: 0.5rem; }
+.nav-item {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.65rem 0.9rem; border-radius: 8px;
+  cursor: pointer; transition: all 0.15s; margin-bottom: 2px;
+  font-size: 0.82rem; font-weight: 500; color: rgba(255,255,255,0.55);
+  border: none; background: transparent; width: 100%; text-align: left;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.nav-item:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+.nav-item.active { background: rgba(255,255,255,0.12); color: white; font-weight: 700; }
+.nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+.nav-badge { margin-left: auto; background: var(--orange); color: white; font-size: 0.62rem; font-weight: 700; padding: 0.1rem 0.45rem; border-radius: 100px; }
+.nav-badge.red { background: var(--red); }
+.nav-badge.green { background: var(--green); }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+.logout-btn {
+  display: flex; align-items: center; gap: 0.6rem;
+  width: 100%; padding: 0.65rem 0.9rem; border-radius: 8px;
+  font-size: 0.8rem; color: rgba(255,255,255,0.4);
+  border: none; background: transparent; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.15s;
+}
+.logout-btn:hover { background: rgba(220,38,38,0.15); color: #f87171; }
+
+/* Main Content */
+.main-content { flex: 1; min-height: 100vh; overflow-y: auto; }
+
+/* Topbar */
+.topbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0.9rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+.topbar-title h2 { font-size: 1rem; font-weight: 800; letter-spacing: -0.3px; }
+.topbar-title p { font-size: 0.72rem; color: var(--text-3); }
+.topbar-right { display: flex; align-items: center; gap: 1rem; }
+.notif-btn {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: var(--bg); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.95rem; cursor: pointer; position: relative;
+  transition: all 0.15s;
+}
+.notif-btn:hover { border-color: var(--border-2); }
+.notif-dot { position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; background: var(--red); border-radius: 50%; border: 1.5px solid var(--surface); }
+.avatar {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 800; color: white; cursor: pointer;
+}
+
+/* Inner page content */
+.page-body { padding: 1.75rem 2rem; }
+
+/* ════════════════════════════════════════════
+   SHARED COMPONENTS
+════════════════════════════════════════════ */
+.section-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
+.section-header h3 { font-size: 1rem; font-weight: 800; letter-spacing: -0.3px; }
+.section-header p { font-size: 0.78rem; color: var(--text-3); margin-top: 0.15rem; }
+.btn-sm {
+  padding: 0.45rem 1rem; border-radius: 7px;
+  font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  border: 1.5px solid; transition: all 0.15s;
+}
+.btn-primary { background: var(--navy); color: white; border-color: var(--navy); }
+.btn-primary:hover { background: var(--navy-light); }
+.btn-outline { background: transparent; color: var(--navy); border-color: var(--border-2); }
+.btn-outline:hover { border-color: var(--navy); background: var(--navy-pale); }
+.btn-orange { background: var(--orange); color: white; border-color: var(--orange); }
+.btn-orange:hover { background: #d05a15; }
+.btn-green { background: var(--green); color: white; border-color: var(--green); }
+.btn-green:hover { background: #0a8a5f; }
+.btn-danger { background: var(--red); color: white; border-color: var(--red); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+}
+.card-pad { padding: 1.5rem; }
+.card-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-header h4 { font-size: 0.85rem; font-weight: 700; }
+.card-header .sub { font-size: 0.72rem; color: var(--text-3); }
+
+/* Stats row */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.25rem 1.5rem;
+  position: relative; overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.07); }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.stat-card.navy::before { background: var(--navy); }
+.stat-card.orange::before { background: var(--orange); }
+.stat-card.green::before { background: var(--green); }
+.stat-card.red::before { background: var(--red); }
+.stat-label { font-size: 0.7rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.5rem; }
+.stat-value { font-size: 1.75rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0.3rem; }
+.stat-change { font-size: 0.72rem; font-weight: 600; display: flex; align-items: center; gap: 0.3rem; }
+.stat-change.up { color: var(--green); }
+.stat-change.down { color: var(--red); }
+.stat-icon { position: absolute; bottom: 1rem; right: 1.25rem; font-size: 1.6rem; opacity: 0.12; }
+
+/* Status badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.25rem 0.7rem; border-radius: 100px;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.3px;
+}
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; }
+.status-validated { background: var(--green-dim); color: var(--green); }
+.status-validated::before { background: var(--green); }
+.status-anomaly { background: var(--red-dim); color: var(--red); }
+.status-anomaly::before { background: var(--red); }
+.status-pending { background: var(--amber-dim); color: var(--amber); }
+.status-pending::before { background: var(--amber); }
+.status-processing { background: var(--sky-dim); color: var(--sky); }
+.status-processing::before { background: var(--sky); }
+
+/* Table */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th { padding: 0.7rem 1rem; text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); background: var(--bg); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.data-table td { padding: 0.85rem 1rem; font-size: 0.82rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: #fafcff; }
+.data-table .amount { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+.data-table .amount.positive { color: var(--green); }
+.data-table .amount.negative { color: var(--red); }
+
+/* Mini chart bars */
+.mini-bar-wrap { display: flex; align-items: flex-end; gap: 3px; height: 48px; }
+.mini-bar { flex: 1; border-radius: 3px 3px 0 0; transition: height 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+.bar-navy { background: var(--navy); opacity: 0.6; }
+.bar-navy:last-child { opacity: 1; }
+.bar-green { background: var(--green); opacity: 0.5; }
+.bar-green:last-child { opacity: 1; }
+.bar-red { background: var(--red); opacity: 0.5; }
+.bar-red:last-child { opacity: 1; }
+
+/* Grid layouts */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+.col-span-2 { grid-column: span 2; }
+
+/* Blockchain ledger entry */
+.ledger-entry {
+  display: flex; align-items: flex-start; gap: 1rem;
+  padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.ledger-entry:hover { background: #fafcff; }
+.ledger-entry:last-child { border-bottom: none; }
+.ledger-hash {
+  font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem;
+  color: var(--text-3); background: var(--bg); padding: 0.2rem 0.5rem;
+  border-radius: 4px; word-break: break-all; min-width: 0;
+}
+.ledger-meta { flex: 1; min-width: 0; }
+.ledger-meta h5 { font-size: 0.8rem; font-weight: 700; margin-bottom: 0.15rem; }
+.ledger-meta p { font-size: 0.72rem; color: var(--text-3); }
+.chain-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid var(--border-2); background: var(--surface);
+  flex-shrink: 0; margin-top: 0.3rem; position: relative;
+}
+.chain-dot::after {
+  content: ''; position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%);
+  width: 1px; height: 100%; background: var(--border);
+}
+.chain-dot.confirmed { border-color: var(--green); background: var(--green); }
+.chain-dot.confirmed::before {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(13,158,110,0.15);
+}
+
+/* Cashflow bars (horizontal) */
+.hbar-wrap { margin-bottom: 0.75rem; }
+.hbar-label { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.3rem; }
+.hbar-label .name { font-weight: 600; }
+.hbar-label .val { font-family: 'IBM Plex Mono', monospace; color: var(--text-3); }
+.hbar-track { height: 7px; background: var(--bg); border-radius: 100px; overflow: hidden; }
+.hbar-fill { height: 100%; border-radius: 100px; transition: width 1.2s cubic-bezier(0.34,1.56,0.64,1); }
+
+/* SKKD Certificate */
+.cert-wrap {
+  max-width: 680px; margin: 0 auto;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+  box-shadow: 0 8px 40px rgba(15,39,68,0.12);
+}
+.cert-header {
+  background: var(--navy);
+  padding: 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.cert-header-left { display: flex; align-items: center; gap: 1rem; }
+.cert-logo-box { width: 52px; height: 52px; border-radius: 12px; justify-content: center; font-weight: 800; font-size: 1.3rem; color: white; background: transparent; }
+.cert-title { color: white; }
+.cert-title h3 { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.3px; }
+.cert-title p { font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; }
+.cert-seal {
+  width: 64px; height: 64px; border-radius: 50%;
+  border: 2px dashed rgba(255,255,255,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+}
+
+.cert-body { padding: 2rem; }
+.cert-type-banner {
+  text-align: center; margin-bottom: 1.75rem;
+  padding: 0.75rem; background: var(--green-dim);
+  border-radius: 8px; border: 1px solid rgba(13,158,110,0.2);
+}
+.cert-type-banner h2 { font-family: 'Lora', serif; font-size: 1.4rem; color: var(--green); font-weight: 600; font-style: italic; }
+.cert-type-banner p { font-size: 0.75rem; color: var(--green); margin-top: 0.2rem; font-weight: 600; letter-spacing: 0.5px; }
+
+.cert-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+.cert-field { padding: 1rem; background: var(--bg); border-radius: 8px; }
+.cert-field .cf-label { font-size: 0.67rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); margin-bottom: 0.35rem; }
+.cert-field .cf-value { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+.cert-field .cf-value.mono { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; }
+
+.cert-score-section { display: flex; gap: 1.5rem; margin-bottom: 1.5rem; align-items: center; }
+.cert-score-ring { position: relative; width: 100px; height: 100px; flex-shrink: 0; }
+.cert-score-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.cert-score-ring .score-num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; color: var(--green); letter-spacing: -1px; }
+.cert-score-ring .score-lbl { font-size: 0.55rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; }
+.score-bars { flex: 1; }
+.score-bar-item { margin-bottom: 0.6rem; }
+.score-bar-label { display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 0.25rem; }
+.score-bar-label .cat { color: var(--text-2); font-weight: 600; }
+.score-bar-label .pct { font-family: 'IBM Plex Mono', monospace; color: var(--text-3); }
+
+.cert-footer { border-top: 1px solid var(--border); padding: 1.25rem 2rem; display: flex; align-items: center; gap: 1.5rem; }
+.qr-placeholder {
+  width: 80px; height: 80px; border: 1.5px solid var(--border-2);
+  border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 1.8rem; background: var(--bg); flex-shrink: 0;
+}
+.qr-placeholder p { font-size: 0.55rem; color: var(--text-4); margin-top: 0.2rem; font-weight: 600; }
+.cert-footer-text h5 { font-size: 0.82rem; font-weight: 800; margin-bottom: 0.3rem; }
+.cert-footer-text p { font-size: 0.72rem; color: var(--text-3); line-height: 1.6; }
+.cert-footer-text .hash { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: var(--navy-mid); background: var(--navy-pale); padding: 0.2rem 0.5rem; border-radius: 4px; word-break: break-all; }
+
+/* Form fields (akuntan portal) */
+.form-section { margin-bottom: 1.5rem; }
+.form-section h5 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+.form-field .fl { font-size: 0.72rem; font-weight: 700; color: var(--text-2); margin-bottom: 0.35rem; }
+.form-input {
+  width: 100%; padding: 0.6rem 0.85rem;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-size: 0.82rem; font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--text); background: var(--bg); outline: none; transition: all 0.15s;
+}
+.form-input:focus { border-color: var(--navy-mid); background: white; }
+.form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b8aaa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem; }
+.form-textarea { width: 100%; padding: 0.6rem 0.85rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.82rem; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text); background: var(--bg); outline: none; resize: vertical; min-height: 80px; transition: all 0.15s; }
+.form-textarea:focus { border-color: var(--navy-mid); background: white; }
+.form-full { grid-column: span 2; }
+
+/* Opinion radio */
+.opinion-opts { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.opinion-opt { padding: 0.5rem 1rem; border-radius: 8px; border: 1.5px solid var(--border); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.opinion-opt:hover { border-color: var(--border-2); }
+.opinion-opt.selected.wtp { border-color: var(--green); background: var(--green-dim); color: var(--green); }
+.opinion-opt.selected.qm { border-color: var(--amber); background: var(--amber-dim); color: var(--amber); }
+.opinion-opt.selected.aw { border-color: var(--red); background: var(--red-dim); color: var(--red); }
+
+/* Progress steps */
+.progress-steps {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  gap: 0;
+}
+.ps-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+.ps-item:last-child { flex: 0 0 auto; min-width: 72px; }
+.ps-num {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 800;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.2s;
+}
+.ps-num.done {
+  background: var(--green);
+  color: white;
+  box-shadow: 0 2px 10px rgba(13,158,110,0.35);
+}
+.ps-num.active {
+  background: var(--navy);
+  color: white;
+  box-shadow: 0 2px 10px rgba(153,115,46,0.45);
+  transform: scale(1.12);
+}
+.ps-num.todo {
+  background: var(--bg);
+  color: var(--text-4);
+  border: 2px solid var(--border-2);
+}
+.ps-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-3);
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+.ps-label.active {
+  color: var(--navy);
+  font-weight: 800;
+}
+.ps-label.done-label {
+  color: var(--green);
+  font-weight: 700;
+}
+.ps-line {
+  flex: 1;
+  height: 2.5px;
+  background: var(--border);
+  margin: 0;
+  align-self: center;
+  position: relative;
+  top: -12px; /* align with circle center */
+  border-radius: 100px;
+}
+.ps-line.done { background: var(--green); }
+
+/* Recon diff highlight */
+.diff-positive { background: var(--green-dim); color: var(--green); }
+.diff-negative { background: var(--red-dim); color: var(--red); }
+.diff-cell { padding: 0.25rem 0.5rem; border-radius: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; font-weight: 700; }
+
+/* SAK EMKM Laporan */
+.laporan-section { margin-bottom: 1.25rem; }
+.laporan-section h5 { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-2); padding: 0.5rem 1.5rem; background: var(--bg); border-bottom: 1px solid var(--border); border-top: 1px solid var(--border); }
+.laporan-row { display: flex; justify-content: space-between; padding: 0.6rem 1.5rem; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+.laporan-row:hover { background: #fafcff; }
+.laporan-row .name { color: var(--text-2); }
+.laporan-row .val { font-family: 'IBM Plex Mono', monospace; font-weight: 600; }
+.laporan-row.total { background: var(--navy-pale); font-weight: 800; }
+.laporan-row.total .name { color: var(--navy); }
+.laporan-row.total .val { color: var(--navy); }
+.laporan-row.profit .name { color: var(--green); font-weight: 700; }
+.laporan-row.profit .val { color: var(--green); font-weight: 800; }
+
+/* Responsive */
+@media(max-width:900px){
+  #page-login{ flex-direction:column }
+  .login-left{ width:100%; min-height:auto; padding:2rem }
+  .login-right{ padding:2rem }
+  .stats-row{ grid-template-columns:1fr 1fr }
+  .sidebar{ display:none }
+  .grid-2,.grid-3{ grid-template-columns:1fr }
+}
+
+/* ════════════════════════════════════════════
+   GEOMAP MODULE
+════════════════════════════════════════════ */
+#view-geomap { height: calc(100vh - 62px); overflow: hidden; }
+#view-geomap.visible { display: flex !important; flex-direction: column; }
+
+/* Controls Bar */
+.geo-controls-bar {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  padding: 0.65rem 1.25rem;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.geo-search-wrap {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 0.4rem 0.75rem;
+  transition: border-color 0.2s;
+  flex: 1; min-width: 200px; max-width: 280px;
+}
+.geo-search-wrap:focus-within { border-color: var(--navy-mid); background: white; }
+.geo-search-icon { font-size: 0.85rem; color: var(--text-3); }
+.geo-search-input {
+  border: none; background: transparent; outline: none;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.8rem;
+  color: var(--text); width: 100%;
+}
+.geo-search-input::placeholder { color: var(--text-4); }
+
+.geo-filter-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.geo-filter-chip {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.3rem 0.7rem; border-radius: 100px;
+  font-size: 0.72rem; font-weight: 600; cursor: pointer;
+  border: 1.5px solid var(--border); background: var(--bg);
+  color: var(--text-3); transition: all 0.15s; user-select: none;
+}
+.geo-filter-chip:hover { border-color: var(--border-2); color: var(--text-2); }
+.geo-filter-chip.active { border-color: var(--navy); background: var(--navy-pale); color: var(--navy); }
+.fc-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.geo-map-type-group { display: flex; gap: 0; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+.geo-type-btn {
+  padding: 0.35rem 0.65rem; font-size: 0.72rem; font-weight: 600;
+  border: none; background: var(--bg); color: var(--text-3);
+  cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+  border-right: 1px solid var(--border); transition: all 0.15s;
+}
+.geo-type-btn:last-child { border-right: none; }
+.geo-type-btn.active { background: var(--navy); color: white; }
+.geo-type-btn:hover:not(.active) { background: var(--navy-pale); color: var(--navy); }
+
+.geo-stats-chips { display: flex; gap: 0.75rem; margin-left: auto; }
+.geo-stat-chip { font-size: 0.72rem; color: var(--text-3); display: flex; align-items: center; gap: 0.3rem; }
+.geo-stat-chip strong { color: var(--text); }
+
+/* Body: Map + Sidebar */
+.geo-body { display: flex; flex: 1; overflow: hidden; }
+
+/* Sidebar */
+.geo-sidebar {
+  width: 25%; min-width: 240px; max-width: 300px;
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.geo-sidebar-header {
+  padding: 1rem 1.25rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: baseline; justify-content: space-between;
+  flex-shrink: 0;
+}
+.geo-sidebar-header h4 { font-size: 0.8rem; font-weight: 800; }
+.geo-count { font-size: 0.68rem; color: var(--text-3); }
+.geo-sidebar-sort { padding: 0.6rem 1.25rem; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.geo-select {
+  width: 100%; padding: 0.35rem 0.6rem;
+  border: 1.5px solid var(--border); border-radius: 7px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.75rem;
+  color: var(--text-2); background: var(--bg); outline: none; cursor: pointer;
+}
+.geo-select:focus { border-color: var(--navy-mid); }
+
+.geo-list { flex: 1; overflow-y: auto; }
+.geo-list-item {
+  padding: 0.85rem 1.25rem; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: all 0.15s; position: relative;
+}
+.geo-list-item:hover { background: var(--navy-pale); }
+.geo-list-item.active { background: var(--navy-pale); border-left: 3px solid var(--navy); padding-left: calc(1.25rem - 3px); }
+.geo-list-item:last-child { border-bottom: none; }
+.geo-list-item-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem; }
+.geo-list-icon { font-size: 1rem; }
+.geo-list-name { font-size: 0.8rem; font-weight: 700; flex: 1; }
+.geo-list-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.geo-list-meta { font-size: 0.68rem; color: var(--text-3); display: flex; justify-content: space-between; align-items: center; }
+.geo-list-loc { display: flex; align-items: center; gap: 0.3rem; }
+.geo-list-val { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: var(--green); font-weight: 600; }
+
+/* Map Canvas */
+.geo-map-wrap { flex: 1; position: relative; overflow: hidden; }
+#geoMap {
+  width: 100%; height: 100%;
+  background: #d4e4f0;
+  position: relative; overflow: hidden;
+}
+
+/* SVG Map Styles */
+.geo-svg-map { width: 100%; height: 100%; }
+.island-path { fill: #c8dce8; stroke: #a0bcd0; stroke-width: 0.5; transition: fill 0.2s; }
+.island-path:hover { fill: #b8cee0; }
+.geo-marker {
+  cursor: pointer;
+  transition: transform 0.15s;
+  transform-origin: center;
+}
+.geo-marker:hover { transform: scale(1.3); }
+.geo-marker circle { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+.geo-marker-pulse {
+  animation: markerPulse 2s ease-out infinite;
+  transform-origin: center;
+}
+@keyframes markerPulse {
+  0% { opacity: 0.6; r: 10; }
+  100% { opacity: 0; r: 22; }
+}
+
+/* Zoom Controls */
+.geo-zoom-controls {
+  position: absolute; right: 1rem; top: 1rem;
+  display: flex; flex-direction: column; gap: 0.25rem;
+  z-index: 10;
+}
+.geo-zoom-btn {
+  width: 32px; height: 32px; border-radius: 7px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.15s; color: var(--navy);
+}
+.geo-zoom-btn:hover { background: var(--navy); color: white; border-color: var(--navy); }
+
+/* Legend */
+.geo-legend {
+  position: absolute; left: 1rem; bottom: 2.5rem;
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(8px);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.75rem 1rem; z-index: 10;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  min-width: 220px;
+}
+.geo-legend-title { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); margin-bottom: 0.5rem; }
+.geo-legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.72rem; color: var(--text-2); margin-bottom: 0.3rem; font-weight: 500; }
+.marker-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.geo-legend-divider { height: 1px; background: var(--border); margin: 0.5rem 0; }
+
+/* Data source tag */
+.geo-datasource {
+  position: absolute; bottom: 0.5rem; left: 50%; transform: translateX(-50%);
+  font-size: 0.65rem; color: var(--text-4); white-space: nowrap;
+  background: rgba(255,255,255,0.85); padding: 0.2rem 0.75rem; border-radius: 100px;
+  border: 1px solid var(--border); z-index: 10;
+}
+
+/* Popup */
+.geo-popup-overlay {
+  position: absolute; inset: 0; z-index: 100;
+  background: rgba(15,39,68,0.35); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.geo-popup-card {
+  background: var(--surface); border-radius: 16px;
+  padding: 1.5rem; max-width: 460px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: slideUp 0.25s ease;
+}
+.geo-popup-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.geo-popup-close {
+  width: 28px; height: 28px; border-radius: 7px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  font-size: 0.8rem; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; color: var(--text-3);
+  transition: all 0.15s;
+}
+.geo-popup-close:hover { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+.geo-popup-body { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; }
+.geo-popup-icon { font-size: 2rem; }
+.geo-popup-name { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.3px; }
+.geo-popup-meta { font-size: 0.72rem; color: var(--text-3); margin-top: 0.15rem; }
+.geo-popup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 1rem; }
+.geo-popup-kv { background: var(--bg); border-radius: 8px; padding: 0.6rem 0.75rem; }
+.geo-popup-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-3); display: block; margin-bottom: 0.2rem; }
+.geo-popup-val { font-size: 0.78rem; font-weight: 600; color: var(--text); }
+.geo-popup-summary {
+  font-size: 0.78rem; color: var(--text-3); line-height: 1.6;
+  padding: 0.75rem; background: var(--navy-pale); border-radius: 8px;
+  margin-bottom: 1rem; border-left: 3px solid var(--navy);
+}
+.geo-popup-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+/* ════════════════════════════════════════════
+   USER DROPDOWN & SIDEBAR USER CARD
+════════════════════════════════════════════ */
+.user-dropdown-wrap { position: relative; }
+
+.user-dropdown-trigger {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.3rem 0.5rem 0.3rem 0.3rem;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  background: var(--surface); cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  transition: all 0.15s;
+}
+.user-dropdown-trigger:hover { border-color: var(--border-2); box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+.user-dropdown-trigger.open { border-color: var(--navy); box-shadow: 0 0 0 3px var(--navy-pale); }
+
+.user-dropdown-info { text-align: left; line-height: 1.2; }
+.user-dropdown-name { display: block; font-size: 0.75rem; font-weight: 700; color: var(--text); }
+.user-dropdown-role { display: block; font-size: 0.65rem; color: var(--text-3); }
+.user-dropdown-caret { font-size: 0.7rem; color: var(--text-3); transition: transform 0.2s; }
+.user-dropdown-caret.rotated { transform: rotate(180deg); }
+
+.user-dropdown-menu {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  min-width: 240px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 0 8px 40px rgba(15,39,68,0.14);
+  animation: slideDown 0.18s ease both;
+  z-index: 200;
+}
+@keyframes slideDown { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+.user-dropdown-header {
+  display: flex; align-items: center; gap: 0.85rem;
+  padding: 1rem 1.1rem 0.75rem;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+}
+.user-dropdown-avatar-lg {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--orange) 0%, #f5a623 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 800; color: white;
+  box-shadow: 0 3px 12px rgba(232,101,26,0.4);
+}
+.user-dropdown-fullname { font-size: 0.82rem; font-weight: 800; color: white; }
+.user-dropdown-id { font-size: 0.62rem; color: rgba(255,255,255,0.45); margin-top: 0.1rem; }
+.user-dropdown-badge-wrap { margin-top: 0.35rem; }
+
+.user-dropdown-divider { height: 1px; background: var(--border); }
+
+.user-dropdown-item {
+  display: flex; align-items: center; gap: 0.65rem;
+  width: 100%; padding: 0.65rem 1.1rem;
+  border: none; background: transparent; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.8rem; font-weight: 500; color: var(--text-2);
+  text-align: left; transition: background 0.12s;
+}
+.user-dropdown-item:hover { background: var(--bg); color: var(--text); }
+.user-dropdown-item.logout-item { color: var(--red); }
+.user-dropdown-item.logout-item:hover { background: var(--red-dim); }
+
+/* Sidebar footer user card */
+.sidebar-user-mini {
+  display: flex; align-items: center; gap: 0.65rem;
+  padding: 0.75rem;
+  background: rgba(255,255,255,0.06); border-radius: 10px;
+  margin-bottom: 0.6rem;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.sidebar-user-avatar {
+  width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--orange) 0%, #f5a623 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 800; color: white;
+}
+.sidebar-user-info { flex: 1; min-width: 0; line-height: 1.2; }
+.sidebar-user-name { display: block; font-size: 0.75rem; font-weight: 700; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-user-id { display: block; font-size: 0.6rem; color: rgba(255,255,255,0.35); margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.logout-btn {
+  display: flex; align-items: center; gap: 0.6rem;
+  width: 100%; padding: 0.6rem 0.75rem; border-radius: 8px;
+  font-size: 0.78rem; font-weight: 600; color: rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.08); background: rgba(220,38,38,0.08); cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.15s;
+}
+.logout-btn:hover { background: rgba(220,38,38,0.2); color: #f87171; border-color: rgba(220,38,38,0.25); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     PAGE 1: LOGIN
+══════════════════════════════════════════ -->
+<div id="page-login" class="page active">
+  <div class="login-left">
+    <div class="login-left-bg"></div>
+    <div class="login-left-grid"></div>
+    <div class="login-left-content">
+      <div class="logo-wrap">
+        <div class="logo-box">
+  <img src="logo-pilar.png" alt="Logo PILAR" style="width: 100%; height: 100%; object-fit: contain;">
+</div>
+        <div class="logo-label">
+          <div class="name">PILAR</div>
+          <div class="sub">PROTOTYPE AWAL V1</div>
+        </div>
+      </div>
+      <div class="hero-login">
+        <h1>Selamat Datang!<br>di Superportal<br><em>PILAR Indonesia</em></h1>
+        <p style="margin-top:1rem">Powered with IoT, AI, and Blockchain.</p>
+      </div>
+    </div>
+    <div class="login-stats">
+      <div class="ls-item">
+        <div class="ls-dot orange"></div>
+        <div class="ls-text"><strong>Rp579 T</strong> — Transaksi QRIS terproses S1 2025</div>
+      </div>
+      <div class="ls-item">
+        <div class="ls-dot green"></div>
+        <div class="ls-text"><strong>500.000+ UMKM</strong> — Target terdaftar Fase Piloting</div>
+      </div>
+      <div class="ls-item">
+        <div class="ls-dot sky"></div>
+        <div class="ls-text"><strong>3.000 Akuntan</strong> — Validator aktif dalam jaringan PILAR</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div class="login-card">
+      <h2>Masuk ke PILAR</h2>
+      <p class="subtitle">Pilih jenis akun untuk mengakses portal yang sesuai</p>
+      <div style="background:var(--orange-dim);border:1px solid var(--orange);border-radius:8px;padding:0.6rem 0.85rem;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:0.5rem;">
+        <span style="font-size:1rem;flex-shrink:0;margin-top:1px">💡</span>
+        <p style="font-size:0.77rem;color:var(--navy);font-weight:600;line-height:1.5">Klik <kbd style="background:white;border:1px solid var(--border-2);border-radius:4px;padding:0.05rem 0.35rem;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--navy)">Enter</kbd> tanpa memasukkan password, kode OTP, atau akun apapun pada prototype ini.</p>
+      </div>
+
+      <div class="role-selector" id="roleSelector">
+        <button class="role-btn active" data-role="umkm" onclick="selectRole(this)">
+          <span class="role-icon">🏪</span>UMKM
+        </button>
+        <button class="role-btn" data-role="akuntan" onclick="selectRole(this)">
+          <span class="role-icon">📋</span>Akuntan
+        </button>
+        <button class="role-btn" data-role="lembaga" onclick="selectRole(this)">
+          <span class="role-icon">🏦</span>Lembaga
+        </button>
+      </div>
+
+      <div id="loginFields">
+        <!-- Dynamic based on role -->
+        <div class="field-group">
+          <label class="field-label">🆔 <span id="idFieldLabel">NIB / ID Merchant QRIS</span></label>
+          <input class="field-input" id="idField" type="text" placeholder="Ketik apapun untuk akses prototype">
+        </div>
+        <div class="field-group">
+          <label class="field-label">🔒 Kata Sandi</label>
+          <input class="field-input" type="password" placeholder="••••••••••">
+        </div>
+      </div>
+
+      <div class="toggle-wrap">
+        <label class="consent-toggle">
+          <div class="toggle-switch on" id="consentToggle" onclick="this.classList.toggle('on')"></div>
+          <span>Setujui akses data validator sesuai<br><a href="#" class="link-sm">Kebijakan Privasi PILAR</a></span>
+        </label>
+        <a href="#" class="link-sm">Lupa Sandi?</a>
+      </div>
+
+      <button class="btn-login" onclick="showMFA()">
+        🔐 Masuk ke PILAR
+      </button>
+
+      <div class="secure-badge">
+        <div class="secure-dot"></div>
+        Koneksi Aman · SSL/TLS Terenkripsi · Privasi Terlindungi
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MFA Modal -->
+<div id="mfaModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <h3>Verifikasi Dua Langkah</h3>
+    <p>Kode OTP 6 digit telah dikirim ke nomor terdaftar Anda. Masukkan dalam 60 detik untuk melanjutkan akses.</p>
+    <div class="otp-inputs">
+      <input class="otp-input" type="text" maxlength="1" id="otp1" oninput="otpNext(this,'otp2')">
+      <input class="otp-input" type="text" maxlength="1" id="otp2" oninput="otpNext(this,'otp3')">
+      <input class="otp-input" type="text" maxlength="1" id="otp3" oninput="otpNext(this,'otp4')">
+      <input class="otp-input" type="text" maxlength="1" id="otp4" oninput="otpNext(this,'otp5')">
+      <input class="otp-input" type="text" maxlength="1" id="otp5" oninput="otpNext(this,'otp6')">
+      <input class="otp-input" type="text" maxlength="1" id="otp6" oninput="otpLast(this)">
+    </div>
+    <button class="btn-login" id="verifyBtn" onclick="verifyOTP()">✓ Verifikasi & Masuk</button>
+    <p style="text-align:center;margin-top:1rem;font-size:0.75rem;color:var(--text-3)">Tidak terima kode? <a href="#" class="link-sm">Kirim ulang (57s)</a></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE 2: DASHBOARD UMKM
+══════════════════════════════════════════ -->
+<div id="page-dashboard" class="page">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="box">
+  <img src="logo-pilar.png" alt="Logo PILAR" style="width: 100%; height: 100%; object-fit: contain;">
+</div>
+        <span class="txt">PILAR</span>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-label">Utama</div>
+        <button class="nav-item active" onclick="showView('dashboard')"><span class="icon">📊</span>Dashboard Utama</button>
+        <div id="umkmOnlyNav">
+          <button class="nav-item" onclick="showView('laporan')"><span class="icon">📄</span>Laporan Laba Rugi<span class="nav-badge green">BARU</span></button>
+          <button class="nav-item" onclick="showView('validasi')"><span class="icon">🤖</span>Status Validasi AI<span class="nav-badge red">3</span></button>
+          <button class="nav-item" onclick="showView('skkd')"><span class="icon">🏅</span>Sertifikat SKKD</button>
+          <button class="nav-item" onclick="showView('geomap')"><span class="icon">🗺️</span>Peta UMKM<span class="nav-badge" style="background:var(--sky)">BARU</span></button>
+        </div>
+      </div>
+      <div class="nav-section" id="akuntanNav" style="display:none">
+        <div class="nav-section-label">Akuntan</div>
+        <button class="nav-item" onclick="showView('atestasi')"><span class="icon">✍️</span>Atestat Keuangan<span class="nav-badge">12</span></button>
+        <button class="nav-item" onclick="showView('blockchain')"><span class="icon">⛓️</span>Audit Blockchain</button>
+        <button class="nav-item" onclick="showView('rekonsiliasi')"><span class="icon">🔄</span>Rekonsiliasi</button>
+      </div>
+      <div class="nav-section" id="lembagaNav" style="display:none">
+        <div class="nav-section-label">Lembaga Keuangan</div>
+        <button class="nav-item active" onclick="showView('lembaga')"><span class="icon">🏦</span>Portofolio Kredit</button>
+        <button class="nav-item" onclick="showView('geomap')"><span class="icon">🗺️</span>Peta UMKM<span class="nav-badge" style="background:var(--sky)">BARU</span></button>
+        <button class="nav-item" onclick="showView('blockchain')"><span class="icon">⛓️</span>Audit Trail</button>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user-mini">
+          <div class="sidebar-user-avatar" id="sidebarAvatarMini">WS</div>
+          <div class="sidebar-user-info">
+            <span class="sidebar-user-name" id="sidebarName">Warung Bu Siti</span>
+            <span class="sidebar-user-id mono" id="sidebarId">QRIS-ID: 8812-3047</span>
+            <div class="role-badge umkm" id="sidebarBadge">● UMKM</div>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()">
+          <span>🚪</span> Keluar
+        </button>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <div class="topbar-title">
+          <h2 id="pageTitle">Dashboard IoT Cashflow</h2>
+          <p id="pageSubtitle">Pembaruan real-time · Senin, 03 Mei 2026 · 14:37 WIB</p>
+        </div>
+        <div class="topbar-right">
+          <div class="notif-btn">🔔<div class="notif-dot"></div></div>
+          <!-- User Profile Dropdown -->
+          <div class="user-dropdown-wrap" id="userDropdownWrap">
+            <button class="user-dropdown-trigger" onclick="toggleUserDropdown()" id="userDropdownTrigger">
+              <div class="avatar" id="topbarAvatar">WS</div>
+              <div class="user-dropdown-info">
+                <span class="user-dropdown-name" id="topbarName">Warung Bu Siti</span>
+                <span class="user-dropdown-role" id="topbarRole">● UMKM</span>
+              </div>
+              <span class="user-dropdown-caret" id="userDropdownCaret">▾</span>
+            </button>
+            <div class="user-dropdown-menu hidden" id="userDropdownMenu">
+              <div class="user-dropdown-header">
+                <div class="user-dropdown-avatar-lg" id="dropdownAvatarLg">WS</div>
+                <div>
+                  <div class="user-dropdown-fullname" id="dropdownFullName">Warung Bu Siti</div>
+                  <div class="user-dropdown-id mono" id="dropdownUserId">QRIS-ID: 8812-3047</div>
+                  <div class="user-dropdown-badge-wrap"><span class="role-badge umkm" id="dropdownRoleBadge">● UMKM</span></div>
+                </div>
+              </div>
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item" onclick="closeDropdownThen(()=>showView('dashboard'))" id="dropdownProfileItem">
+                <span>👤</span> Profil Saya
+              </button>
+              <button class="user-dropdown-item" onclick="closeDropdownThen(()=>alert('Pengaturan akan datang di versi berikutnya.'))">
+                <span>⚙️</span> Pengaturan Akun
+              </button>
+              <div class="user-dropdown-divider"></div>
+              <button class="user-dropdown-item logout-item" onclick="doLogout()">
+                <span>🚪</span> Keluar dari PILAR
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: DASHBOARD ── -->
+      <div id="view-dashboard" class="page-body">
+        <div class="stats-row">
+          <div class="stat-card navy">
+            <div class="stat-icon">💰</div>
+            <div class="stat-label">Total Pemasukan (Mei)</div>
+            <div class="stat-value" style="color:var(--navy)">Rp48,7 jt</div>
+            <div class="stat-change up">↑ 12,4% vs Apr</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">🛒</div>
+            <div class="stat-label">Total Pengeluaran (Mei)</div>
+            <div class="stat-value" style="color:var(--orange)">Rp29,2 jt</div>
+            <div class="stat-change down">↑ 8,1% vs Apr</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">📈</div>
+            <div class="stat-label">Laba Bersih (Mei)</div>
+            <div class="stat-value" style="color:var(--green)">Rp22,5 jt</div>
+            <div class="stat-change up">↑ 19,8% vs Apr</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-label">Transaksi Anomali</div>
+            <div class="stat-value" style="color:var(--red)">3</div>
+            <div class="stat-change down">Perlu atensi akuntan</div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:1.25rem">
+          <!-- Cashflow Chart -->
+          <div class="card">
+            <div class="card-header">
+              <div><h4>Arus Kas Harian (30 Hari Terakhir)</h4><div class="sub">Sumber: API QRIS — otomatis tanpa input manual</div></div>
+              <span class="badge status-validated">● Live</span>
+            </div>
+            <div class="card-pad">
+              <div style="display:flex;align-items:flex-end;gap:4px;height:90px;margin-bottom:0.75rem" id="cashflowChart"></div>
+              <div style="display:flex;gap:1.5rem;font-size:0.72rem;color:var(--text-3)">
+                <span style="display:flex;align-items:center;gap:0.35rem"><span style="width:10px;height:10px;background:var(--navy);border-radius:2px;display:inline-block"></span>Pemasukan</span>
+                <span style="display:flex;align-items:center;gap:0.35rem"><span style="width:10px;height:10px;background:var(--orange);border-radius:2px;display:inline-block"></span>Pengeluaran</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Kategori -->
+          <div class="card">
+            <div class="card-header">
+              <div><h4>Komposisi Pendapatan</h4><div class="sub">Klasifikasi otomatis SAK EMKM</div></div>
+              <button class="btn-sm btn-outline" onclick="showView('laporan')">Lihat Lapkeu →</button>
+            </div>
+            <div class="card-pad">
+              <div class="hbar-wrap">
+                <div class="hbar-label"><span class="name">Penjualan Makanan</span><span class="val">Rp31,4 jt</span></div>
+                <div class="hbar-track"><div class="hbar-fill" style="width:0%;background:var(--navy)" data-w="64%"></div></div>
+              </div>
+              <div class="hbar-wrap">
+                <div class="hbar-label"><span class="name">Minuman & Jajanan</span><span class="val">Rp10,1 jt</span></div>
+                <div class="hbar-track"><div class="hbar-fill" style="width:0%;background:var(--sky)" data-w="21%"></div></div>
+              </div>
+              <div class="hbar-wrap">
+                <div class="hbar-label"><span class="name">Produk Retail</span><span class="val">Rp5,2 jt</span></div>
+                <div class="hbar-track"><div class="hbar-fill" style="width:0%;background:var(--orange)" data-w="11%"></div></div>
+              </div>
+              <div class="hbar-wrap">
+                <div class="hbar-label"><span class="name">Lain-lain</span><span class="val">Rp2,0 jt</span></div>
+                <div class="hbar-track"><div class="hbar-fill" style="width:0%;background:var(--border-2)" data-w="4%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="card">
+          <div class="card-header">
+            <div><h4>Transaksi Terakhir — QRIS Real-time</h4><div class="sub">Ditangkap otomatis via API Bank Indonesia</div></div>
+            <button class="btn-sm btn-outline" onclick="showView('validasi')">Lihat Semua →</button>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Waktu</th><th>Keterangan</th><th>Kategori AI</th><th>Nominal</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono" style="color:var(--text-3);font-size:0.72rem">03 Mei 14:31</td><td>Pembayaran QRIS di Meja 3</td><td><span style="background:var(--sky-dim);color:var(--sky);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600">Pendapatan Usaha</span></td><td class="amount positive">+ Rp 87.000</td><td><span class="badge status-validated">Tervalidasi</span></td></tr>
+              <tr><td class="mono" style="color:var(--text-3);font-size:0.72rem">03 Mei 13:55</td><td>Transfer Pemasok Bahan Baku</td><td><span style="background:var(--orange-dim);color:var(--orange);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600">HPP</span></td><td class="amount negative">− Rp 2.450.000</td><td><span class="badge status-validated">Tervalidasi</span></td></tr>
+              <tr style="background:rgba(220,38,38,0.03)"><td class="mono" style="color:var(--text-3);font-size:0.72rem">03 Mei 13:22</td><td>Transfer tidak dikenal #TX4482</td><td><span style="background:var(--red-dim);color:var(--red);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600">⚠ Anomali</span></td><td class="amount negative">− Rp 5.000.000</td><td><span class="badge status-anomaly">Anomali</span></td></tr>
+              <tr><td class="mono" style="color:var(--text-3);font-size:0.72rem">03 Mei 12:18</td><td>QRIS Batch — Pagi</td><td><span style="background:var(--sky-dim);color:var(--sky);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600">Pendapatan Usaha</span></td><td class="amount positive">+ Rp 1.230.000</td><td><span class="badge status-validated">Tervalidasi</span></td></tr>
+              <tr><td class="mono" style="color:var(--text-3);font-size:0.72rem">03 Mei 09:05</td><td>Bayar Sewa Lapak — Mei 2026</td><td><span style="background:var(--amber-dim);color:var(--amber);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600">Beban Operasional</span></td><td class="amount negative">− Rp 1.800.000</td><td><span class="badge status-pending">Menunggu</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── VIEW: DASHBOARD LEMBAGA ── -->
+      <div id="view-lembaga" class="page-body hidden">
+        <!-- KPI Row -->
+        <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat-card navy">
+            <div class="stat-icon">🏦</div>
+            <div class="stat-label">Total Portofolio Aktif</div>
+            <div class="stat-value" style="color:var(--navy)">Rp4,8 T</div>
+            <div class="stat-change up">↑ 7,2% vs Q1</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">✅</div>
+            <div class="stat-label">UMKM Terverifikasi SKKD</div>
+            <div class="stat-value" style="color:var(--green)">2.847</div>
+            <div class="stat-change up">↑ 312 bulan ini</div>
+          </div>
+          <div class="stat-card orange">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-label">Pipeline Pengajuan Kredit</div>
+            <div class="stat-value" style="color:var(--orange)">148</div>
+            <div class="stat-change up">Menunggu review</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-label">NPL Rasio Portofolio</div>
+            <div class="stat-value" style="color:var(--red)">1,4%</div>
+            <div class="stat-change up" style="color:var(--green)">↓ 0,3% vs bulan lalu</div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:1.25rem">
+          <!-- Distribusi Geografis -->
+          <div class="card">
+            <div class="card-header">
+              <div><h4>Distribusi Portofolio — Geografis</h4><div class="sub">Penyebaran kredit aktif per wilayah</div></div>
+              <button class="btn-sm btn-outline" onclick="showView('geomap')">🗺 Lihat Peta →</button>
+            </div>
+            <div class="card-pad">
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--border);margin-bottom:0.5rem">
+                <span style="font-size:0.72rem;font-weight:700;color:var(--text-2);flex:1">Pulau Jawa</span>
+                <span class="mono" style="font-size:0.72rem;color:var(--text-3)">Rp3,73 T</span>
+                <div style="width:120px;height:6px;background:var(--bg);border-radius:100px;overflow:hidden"><div class="hbar-fill" style="width:0%;background:var(--orange);height:100%" data-w="77.7%"></div></div>
+                <span style="font-size:0.7rem;font-weight:800;color:var(--orange);width:36px;text-align:right">77,7%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:0.72rem;font-weight:700;color:var(--text-2);flex:1">Sumatera</span>
+                <span class="mono" style="font-size:0.72rem;color:var(--text-3)">Rp624 M</span>
+                <div style="width:120px;height:6px;background:var(--bg);border-radius:100px;overflow:hidden"><div class="hbar-fill" style="width:0%;background:var(--sky);height:100%" data-w="13%"></div></div>
+                <span style="font-size:0.7rem;font-weight:800;color:var(--sky);width:36px;text-align:right">13%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:0.72rem;font-weight:700;color:var(--text-2);flex:1">Kalimantan</span>
+                <span class="mono" style="font-size:0.72rem;color:var(--text-3)">Rp240 M</span>
+                <div style="width:120px;height:6px;background:var(--bg);border-radius:100px;overflow:hidden"><div class="hbar-fill" style="width:0%;background:var(--green);height:100%" data-w="5%"></div></div>
+                <span style="font-size:0.7rem;font-weight:800;color:var(--green);width:36px;text-align:right">5%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:0.72rem;font-weight:700;color:var(--text-2);flex:1">Sulawesi</span>
+                <span class="mono" style="font-size:0.72rem;color:var(--text-3)">Rp96 M</span>
+                <div style="width:120px;height:6px;background:var(--bg);border-radius:100px;overflow:hidden"><div class="hbar-fill" style="width:0%;background:var(--green-mid);height:100%" data-w="2%"></div></div>
+                <span style="font-size:0.7rem;font-weight:800;color:var(--green-mid);width:36px;text-align:right">2%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0">
+                <span style="font-size:0.72rem;font-weight:700;color:var(--text-2);flex:1">Papua & Lainnya</span>
+                <span class="mono" style="font-size:0.72rem;color:var(--text-3)">Rp110 M</span>
+                <div style="width:120px;height:6px;background:var(--bg);border-radius:100px;overflow:hidden"><div class="hbar-fill" style="width:0%;background:var(--border-2);height:100%" data-w="2.3%"></div></div>
+                <span style="font-size:0.7rem;font-weight:800;color:var(--text-3);width:36px;text-align:right">2,3%</span>
+              </div>
+              <div style="margin-top:1rem;padding:0.65rem 0.85rem;background:var(--orange-dim);border-radius:8px;border-left:3px solid var(--orange)">
+                <p style="font-size:0.72rem;color:var(--orange);font-weight:600">⚠ Konsentrasi di Jawa masih 77,7% — jauh di atas target OJK 60%. Gunakan fitur Peta UMKM untuk identifikasi potensi ekspansi di luar Jawa.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sektor Dominan -->
+          <div class="card">
+            <div class="card-header">
+              <div><h4>Komposisi Sektor Kredit</h4><div class="sub">Berdasarkan outstanding pinjaman aktif</div></div>
+              <span class="badge status-validated">Per 03 Mei 2026</span>
+            </div>
+            <div class="card-pad">
+              <div class="hbar-wrap">
+                <div class="hbar-label"><span class="name">Perdagangan Besar & Eceran</span><span class="val mono">Rp47,18 T</span></div>
+                <div class="hbar-track"><div class="hbar-fill" style="width:0%;background:var(--navy)" data-w="68%"></div></div>
+              </div>
+              <div class="hbar-wrap">
+                <div class="hbar-label"><span class="name">Industri Pengolahan</span><span class="val mono">Rp12,4 T</span></div>
+                <div class="hbar-track"><div class="hbar-fill" style="width:0%;background:var(--sky)" data-w="18%"></div></div>
+              </div>
+              <div class="hbar-wrap">
+                <div class="hbar-label"><span class="name">Pertanian & Agrobisnis</span><span class="val mono">Rp5,6 T</span></div>
+                <div class="hbar-track"><div class="hbar-fill" style="width:0%;background:var(--green)" data-w="8%"></div></div>
+              </div>
+              <div class="hbar-wrap">
+                <div class="hbar-label"><span class="name">Jasa & Hospitality</span><span class="val mono">Rp2,8 T</span></div>
+                <div class="hbar-track"><div class="hbar-fill" style="width:0%;background:var(--orange)" data-w="4%"></div></div>
+              </div>
+              <div class="hbar-wrap">
+                <div class="hbar-label"><span class="name">Lain-lain</span><span class="val mono">Rp1,4 T</span></div>
+                <div class="hbar-track"><div class="hbar-fill" style="width:0%;background:var(--border-2)" data-w="2%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pipeline Kredit -->
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-header">
+            <div><h4>Pipeline Pengajuan Kredit — Teratas</h4><div class="sub">UMKM dengan SKKD valid · Siap diproses lembaga</div></div>
+            <div style="display:flex;gap:0.5rem">
+              <button class="btn-sm btn-outline" onclick="showView('geomap')">🗺 Lihat di Peta</button>
+              <button class="btn-sm btn-primary">Unduh Pipeline →</button>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr><th>UMKM / NIB</th><th>Sektor</th><th>Lokasi</th><th>Omzet/Bulan</th><th>Skor Kredit PILAR</th><th>Status SKKD</th><th>Aksi</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700;font-size:0.82rem">CV Sawit Raya</div><div class="mono" style="font-size:0.65rem;color:var(--text-3)">NIB: 3344556677889900</div></td>
+                <td><span style="background:var(--green-dim);color:var(--green);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600">Perkebunan</span></td>
+                <td style="font-size:0.78rem">📍 Pekanbaru, Riau</td>
+                <td class="amount mono">Rp 480 jt</td>
+                <td><span style="font-weight:800;color:var(--green)">A (88)</span></td>
+                <td><span class="badge status-validated">Aktif · ISAE 3000</span></td>
+                <td><button class="btn-sm btn-orange" onclick="showView('laporan')">Review →</button></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700;font-size:0.82rem">Industri Cokelat Sulsel</div><div class="mono" style="font-size:0.65rem;color:var(--text-3)">NIB: 1122334455660099</div></td>
+                <td><span style="background:var(--orange-dim);color:var(--orange);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600">Pengolahan</span></td>
+                <td style="font-size:0.78rem">📍 Makassar, Sulsel</td>
+                <td class="amount mono">Rp 134 jt</td>
+                <td><span style="font-weight:800;color:var(--green)">A (90)</span></td>
+                <td><span class="badge status-validated">Aktif · ISAE 3000</span></td>
+                <td><button class="btn-sm btn-orange" onclick="showView('laporan')">Review →</button></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700;font-size:0.82rem">Batik Larasati</div><div class="mono" style="font-size:0.65rem;color:var(--text-3)">NIB: 9876543210987654</div></td>
+                <td><span style="background:var(--sky-dim);color:var(--sky);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600">Tekstil</span></td>
+                <td style="font-size:0.78rem">📍 Yogyakarta, DIY</td>
+                <td class="amount mono">Rp 92 jt</td>
+                <td><span style="font-weight:800;color:var(--green)">A+ (94)</span></td>
+                <td><span class="badge status-validated">Aktif · ISAE 3000</span></td>
+                <td><button class="btn-sm btn-orange" onclick="showView('laporan')">Review →</button></td>
+              </tr>
+              <tr style="background:rgba(217,119,6,0.03)">
+                <td><div style="font-weight:700;font-size:0.82rem">Koperasi Tani Subur</div><div class="mono" style="font-size:0.65rem;color:var(--text-3)">NIB: 5544332211009988</div></td>
+                <td><span style="background:var(--green-dim);color:var(--green);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600">Pertanian</span></td>
+                <td style="font-size:0.78rem">📍 Bandung, Jabar</td>
+                <td class="amount mono">Rp 67 jt</td>
+                <td><span style="font-weight:800;color:var(--amber)">Dalam Penilaian</span></td>
+                <td><span class="badge status-processing">Proses Atestasi</span></td>
+                <td><button class="btn-sm btn-outline" disabled style="opacity:0.5;cursor:not-allowed">Menunggu</button></td>
+              </tr>
+              <tr style="background:rgba(217,119,6,0.03)">
+                <td><div style="font-weight:700;font-size:0.82rem">Nelayan Koperasi Aceh</div><div class="mono" style="font-size:0.65rem;color:var(--text-3)">NIB: 7788990011223344</div></td>
+                <td><span style="background:var(--sky-dim);color:var(--sky);padding:0.15rem 0.5rem;border-radius:4px;font-size:0.7rem;font-weight:600">Perikanan</span></td>
+                <td style="font-size:0.78rem">📍 Banda Aceh, Aceh</td>
+                <td class="amount mono">Rp 43 jt</td>
+                <td><span style="font-weight:800;color:var(--amber)">Dalam Penilaian</span></td>
+                <td><span class="badge status-processing">Proses Atestasi</span></td>
+                <td><button class="btn-sm btn-outline" disabled style="opacity:0.5;cursor:not-allowed">Menunggu</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Risk & Alert Row -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><div><h4>Monitoring Risiko Portofolio</h4><div class="sub">Berdasarkan data QRIS & laporan PILAR real-time</div></div></div>
+            <div class="card-pad" style="display:flex;flex-direction:column;gap:0.75rem">
+              <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;background:var(--green-dim);border-radius:8px;border-left:3px solid var(--green)">
+                <span style="font-size:1.4rem">🟢</span>
+                <div><div style="font-size:0.78rem;font-weight:700;color:var(--green)">Kategori Lancar (Kolektibilitas 1)</div><div style="font-size:0.72rem;color:var(--text-3)">2.341 debitur · 82,2% portofolio · Rp3,94 T</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;background:var(--amber-dim);border-radius:8px;border-left:3px solid var(--amber)">
+                <span style="font-size:1.4rem">🟡</span>
+                <div><div style="font-size:0.78rem;font-weight:700;color:var(--amber)">Dalam Perhatian Khusus (Kol. 2)</div><div style="font-size:0.72rem;color:var(--text-3)">312 debitur · 11% portofolio · Rp528 M</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;background:var(--orange-dim);border-radius:8px;border-left:3px solid var(--orange)">
+                <span style="font-size:1.4rem">🟠</span>
+                <div><div style="font-size:0.78rem;font-weight:700;color:var(--orange)">Kurang Lancar (Kol. 3)</div><div style="font-size:0.72rem;color:var(--text-3)">114 debitur · 4% portofolio · Rp192 M</div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;background:var(--red-dim);border-radius:8px;border-left:3px solid var(--red)">
+                <span style="font-size:1.4rem">🔴</span>
+                <div><div style="font-size:0.78rem;font-weight:700;color:var(--red)">Macet / NPL (Kol. 4–5)</div><div style="font-size:0.72rem;color:var(--text-3)">80 debitur · 2,8% portofolio · Rp134 M</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><h4>Alert & Notifikasi Lembaga</h4><div class="sub">Pembaruan hari ini · 03 Mei 2026</div></div><span class="badge status-anomaly">7 baru</span></div>
+            <div style="overflow:hidden">
+              <div class="ledger-entry">
+                <div class="chain-dot confirmed"></div>
+                <div class="ledger-meta">
+                  <h5 style="font-size:0.78rem">SKKD Baru — CV Sawit Raya (Riau)</h5>
+                  <p>Sertifikat terbit · Skor A (88) · Siap ditawarkan kredit</p>
+                </div>
+                <span class="badge status-validated" style="flex-shrink:0">Baru</span>
+              </div>
+              <div class="ledger-entry">
+                <div class="chain-dot confirmed"></div>
+                <div class="ledger-meta">
+                  <h5 style="font-size:0.78rem">Anomali Cashflow — Debitur #TX-2281</h5>
+                  <p>Transfer tidak dikenal Rp12 jt · Akuntan sudah dinotifikasi</p>
+                </div>
+                <span class="badge status-anomaly" style="flex-shrink:0">Review</span>
+              </div>
+              <div class="ledger-entry">
+                <div class="chain-dot confirmed"></div>
+                <div class="ledger-meta">
+                  <h5 style="font-size:0.78rem">Laporan OJK — Deadline 10 Mei 2026</h5>
+                  <p>Rekap portofolio UMKM Q2 wajib dikirim ke portal OJK</p>
+                </div>
+                <span class="badge status-pending" style="flex-shrink:0">Segera</span>
+              </div>
+              <div class="ledger-entry">
+                <div class="chain-dot confirmed"></div>
+                <div class="ledger-meta">
+                  <h5 style="font-size:0.78rem">3 UMKM Papua Masuk Sistem PILAR</h5>
+                  <p>Koperasi Papua Bangkit · Data awal sedang dikumpulkan</p>
+                </div>
+                <span class="badge status-processing" style="flex-shrink:0">Pantau</span>
+              </div>
+              <div class="ledger-entry">
+                <div class="chain-dot confirmed"></div>
+                <div class="ledger-meta">
+                  <h5 style="font-size:0.78rem">Ketimpangan Jawa Warning — OJK</h5>
+                  <p>Rasio 77,7% melewati threshold. Perlu ekspansi non-Jawa.</p>
+                </div>
+                <span class="badge status-anomaly" style="flex-shrink:0">Kritis</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- end view-lembaga -->
+
+      <!-- ── VIEW: LAPORAN LABA RUGI ── -->
+      <div id="view-laporan" class="page-body hidden">
+        <div class="section-header">
+          <div><h3>Draf Laporan Laba Rugi</h3><p>Format SAK EMKM · Periode Mei 2026 · Digenerate otomatis oleh AI PILAR</p></div>
+          <div style="display:flex;gap:0.6rem">
+            <button class="btn-sm btn-outline" onclick="showView('validasi')">Ajukan ke Akuntan →</button>
+            <button class="btn-sm btn-primary">⬇ Unduh PDF</button>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card" style="grid-column:span 2">
+            <div class="card-header">
+              <div>
+                <h4>LAPORAN LABA RUGI — SAK EMKM</h4>
+                <div class="sub mono">Warung Bu Siti · NIB 1234567890123456 · Periode: 1–31 Mei 2026</div>
+              </div>
+              <span class="badge status-processing">⚙ Draf AI — Belum Divalidasi</span>
+            </div>
+            <div class="laporan-section">
+              <h5>A. Pendapatan</h5>
+              <div class="laporan-row"><span class="name">Penjualan Bersih</span><span class="val positive">Rp 48.700.000</span></div>
+              <div class="laporan-row"><span class="name">Pendapatan Lain-lain</span><span class="val positive">Rp 450.000</span></div>
+              <div class="laporan-row total"><span class="name">TOTAL PENDAPATAN</span><span class="val">Rp 49.150.000</span></div>
+            </div>
+            <div class="laporan-section">
+              <h5>B. Harga Pokok Penjualan (HPP)</h5>
+              <div class="laporan-row"><span class="name">Persediaan Awal</span><span class="val negative">Rp 3.200.000</span></div>
+              <div class="laporan-row"><span class="name">Pembelian Bahan Baku</span><span class="val negative">Rp 18.750.000</span></div>
+              <div class="laporan-row"><span class="name">Persediaan Akhir</span><span class="val positive">(Rp 2.800.000)</span></div>
+              <div class="laporan-row total"><span class="name">TOTAL HPP</span><span class="val" style="color:var(--red)">Rp 19.150.000</span></div>
+            </div>
+            <div class="laporan-section">
+              <h5>C. Laba Kotor</h5>
+              <div class="laporan-row total"><span class="name">LABA KOTOR</span><span class="val">Rp 30.000.000</span></div>
+            </div>
+            <div class="laporan-section">
+              <h5>D. Beban Operasional</h5>
+              <div class="laporan-row"><span class="name">Beban Sewa</span><span class="val negative">Rp 1.800.000</span></div>
+              <div class="laporan-row"><span class="name">Beban Gaji/Tenaga Kerja</span><span class="val negative">Rp 4.500.000</span></div>
+              <div class="laporan-row"><span class="name">Beban Utilitas (Listrik, Air)</span><span class="val negative">Rp 750.000</span></div>
+              <div class="laporan-row"><span class="name">Beban Pemasaran</span><span class="val negative">Rp 350.000</span></div>
+              <div class="laporan-row"><span class="name">Beban Lain-lain</span><span class="val negative">Rp 100.000</span></div>
+              <div class="laporan-row total"><span class="name">TOTAL BEBAN OPERASIONAL</span><span class="val" style="color:var(--red)">Rp 7.500.000</span></div>
+            </div>
+            <div class="laporan-section">
+              <div class="laporan-row profit"><span class="name">✅ LABA BERSIH</span><span class="val">Rp 22.500.000</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: VALIDASI AI ── -->
+      <div id="view-validasi" class="page-body hidden">
+        <div class="section-header">
+          <div><h3>Pusat Validasi AI</h3><p>Klasifikasi otomatis AI PILAR — 3 anomali menunggu atensi akuntan validator</p></div>
+          <button class="btn-sm btn-orange" onclick="alert('Permintaan sertifikasi dikirim ke akuntan validator!')">📤 Ajukan Sertifikasi SKKD</button>
+        </div>
+
+        <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.25rem">
+          <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-label">Tervalidasi AI</div><div class="stat-value" style="color:var(--green)">247</div><div class="stat-change up">dari 250 transaksi bulan ini</div></div>
+          <div class="stat-card red"><div class="stat-icon">🚨</div><div class="stat-label">Anomali Terdeteksi</div><div class="stat-value" style="color:var(--red)">3</div><div class="stat-change down">Perlu review akuntan</div></div>
+          <div class="stat-card orange"><div class="stat-icon">⏳</div><div class="stat-label">Menunggu Atestasi</div><div class="stat-value" style="color:var(--amber)">1</div><div class="stat-change">Laporan Mei 2026</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div><h4>Daftar Transaksi — Klasifikasi AI</h4><div class="sub">Anomali ditandai otomatis · Klik baris untuk detail</div></div></div>
+          <table class="data-table">
+            <thead>
+              <tr><th>#</th><th>Tanggal & Waktu</th><th>Keterangan</th><th>Kategori AI</th><th>Confidence</th><th>Nominal</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mono" style="font-size:0.7rem;color:var(--text-4)">TRX-001</td><td class="mono" style="font-size:0.72rem">03/05 14:31</td><td>QRIS Meja 3 — Nasi Goreng</td><td>Pendapatan Usaha</td><td><span style="color:var(--green);font-weight:700;font-family:'IBM Plex Mono',monospace">98.2%</span></td><td class="amount positive">+Rp87.000</td><td><span class="badge status-validated">Validated</span></td><td><button class="btn-sm btn-outline" style="font-size:0.65rem;padding:0.25rem 0.6rem">Detail</button></td></tr>
+              <tr style="background:rgba(220,38,38,0.03)"><td class="mono" style="font-size:0.7rem;color:var(--text-4)">TRX-002</td><td class="mono" style="font-size:0.72rem">03/05 13:22</td><td>⚠ Transfer tidak dikenal</td><td><span style="color:var(--red);font-weight:700">ANOMALI</span></td><td><span style="color:var(--red);font-weight:700;font-family:'IBM Plex Mono',monospace">12.4%</span></td><td class="amount negative">−Rp5.000.000</td><td><span class="badge status-anomaly">Anomaly</span></td><td><button class="btn-sm btn-danger" style="font-size:0.65rem;padding:0.25rem 0.6rem;color:white">Review</button></td></tr>
+              <tr style="background:rgba(220,38,38,0.03)"><td class="mono" style="font-size:0.7rem;color:var(--text-4)">TRX-003</td><td class="mono" style="font-size:0.72rem">01/05 22:47</td><td>⚠ Round-trip deposit #RTP81</td><td><span style="color:var(--red);font-weight:700">ANOMALI</span></td><td><span style="color:var(--red);font-weight:700;font-family:'IBM Plex Mono',monospace">8.7%</span></td><td class="amount negative">−Rp12.000.000</td><td><span class="badge status-anomaly">Anomaly</span></td><td><button class="btn-sm btn-danger" style="font-size:0.65rem;padding:0.25rem 0.6rem;color:white">Review</button></td></tr>
+              <tr><td class="mono" style="font-size:0.7rem;color:var(--text-4)">TRX-004</td><td class="mono" style="font-size:0.72rem">02/05 09:05</td><td>Bayar Sewa Lapak</td><td>Beban Operasional</td><td><span style="color:var(--amber);font-weight:700;font-family:'IBM Plex Mono',monospace">76.3%</span></td><td class="amount negative">−Rp1.800.000</td><td><span class="badge status-pending">Pending</span></td><td><button class="btn-sm btn-outline" style="font-size:0.65rem;padding:0.25rem 0.6rem">Detail</button></td></tr>
+              <tr><td class="mono" style="font-size:0.7rem;color:var(--text-4)">TRX-005</td><td class="mono" style="font-size:0.72rem">02/05 07:30</td><td>Beli bahan baku — Pasar</td><td>HPP</td><td><span style="color:var(--green);font-weight:700;font-family:'IBM Plex Mono',monospace">91.5%</span></td><td class="amount negative">−Rp3.200.000</td><td><span class="badge status-validated">Validated</span></td><td><button class="btn-sm btn-outline" style="font-size:0.65rem;padding:0.25rem 0.6rem">Detail</button></td></tr>
+              <tr style="background:rgba(220,38,38,0.03)"><td class="mono" style="font-size:0.7rem;color:var(--text-4)">TRX-006</td><td class="mono" style="font-size:0.72rem">30/04 23:59</td><td>⚠ Transaksi di luar jam operasi</td><td><span style="color:var(--red);font-weight:700">ANOMALI</span></td><td><span style="color:var(--red);font-weight:700;font-family:'IBM Plex Mono',monospace">22.1%</span></td><td class="amount positive">+Rp750.000</td><td><span class="badge status-anomaly">Anomaly</span></td><td><button class="btn-sm btn-danger" style="font-size:0.65rem;padding:0.25rem 0.6rem;color:white">Review</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── VIEW: SKKD ── -->
+      <div id="view-skkd" class="page-body hidden">
+        <div class="section-header">
+          <div><h3>Sertifikat Kelayakan Keuangan Digital</h3><p>Dapat diverifikasi real-time oleh lembaga keuangan · Tercatat di blockchain PILAR</p></div>
+          <div style="display:flex;gap:0.6rem">
+            <button class="btn-sm btn-outline">⬇ Unduh PDF</button>
+            <button class="btn-sm btn-green">📤 Bagikan ke Fintech</button>
+          </div>
+        </div>
+        <div class="cert-wrap">
+          <div class="cert-header">
+            <div class="cert-header-left">
+              <div class="cert-logo-box">
+  <img src="logo-pilar.png" alt="Logo PILAR" style="width: 100%; height: 100%; object-fit: contain;">
+</div>
+              <div class="cert-title">
+                <h3>Sertifikat Kelayakan Keuangan Digital </h3>
+                <p>Diterbitkan dan diverifikasi oleh sistem PILAR · Blockchain-Verified</p>
+              </div>
+            </div>
+            <div class="cert-seal">✅</div>
+          </div>
+          <div class="cert-body">
+            <div class="cert-type-banner">
+              <h2>Sertifikat Kelayakan Keuangan Digital (SKKD)</h2>
+              <p>TERVERIFIKASI AKUNTAN PUBLIK · STANDAR SAK EMKM</p>
+            </div>
+            <div class="cert-grid">
+              <div class="cert-field"><div class="cf-label">Nama Usaha</div><div class="cf-value">Warung Bu Siti</div></div>
+              <div class="cert-field"><div class="cf-label">NIB / ID QRIS</div><div class="cf-value mono">1234567890123456 / 8812-3047</div></div>
+              <div class="cert-field"><div class="cf-label">Validator Akuntan</div><div class="cf-value">Ir. Drs. Ahmad Fauzi, CPA</div></div>
+              <div class="cert-field"><div class="cf-label">No. Izin Akuntan (IAI)</div><div class="cf-value mono">IAI/CPA/XXXX/XXXXX</div></div>
+              <div class="cert-field"><div class="cf-label">Periode Laporan</div><div class="cf-value">Januari — Mei 2026</div></div>
+              <div class="cert-field"><div class="cf-label">Tanggal Terbit</div><div class="cf-value">03 Mei 2026</div></div>
+              <div class="cert-field"><div class="cf-label">Standar Akuntansi</div><div class="cf-value">SAK EMKM (IAI 2018) + ISAE 3000</div></div>
+              <div class="cert-field"><div class="cf-label">Opini Akuntan</div><div class="cf-value" style="color:var(--green)">✓ Wajar Tanpa Pengecualian</div></div>
+            </div>
+            <div class="cert-score-section">
+              <div class="cert-score-ring">
+                <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#e2e8f0" stroke-width="10"/><circle cx="50" cy="50" r="40" fill="none" stroke="var(--green)" stroke-width="10" stroke-dasharray="213.6 251.2" stroke-linecap="round"/></svg>
+                <div class="score-num">85<div class="score-lbl">Skor PILAR</div></div>
+              </div>
+              <div class="score-bars" style="flex:1">
+                <div class="score-bar-item"><div class="score-bar-label"><span class="cat">Kualitas Pencatatan</span><span class="pct">92%</span></div><div class="hbar-track"><div class="hbar-fill" style="width:92%;background:var(--green)"></div></div></div>
+                <div class="score-bar-item"><div class="score-bar-label"><span class="cat">Konsistensi Arus Kas</span><span class="pct">88%</span></div><div class="hbar-track"><div class="hbar-fill" style="width:88%;background:var(--green)"></div></div></div>
+                <div class="score-bar-item"><div class="score-bar-label"><span class="cat">Kelayakan Kredit</span><span class="pct">79%</span></div><div class="hbar-track"><div class="hbar-fill" style="width:79%;background:var(--sky)"></div></div></div>
+                <div class="score-bar-item"><div class="score-bar-label"><span class="cat">Kepatuhan SAK EMKM</span><span class="pct">95%</span></div><div class="hbar-track"><div class="hbar-fill" style="width:95%;background:var(--green)"></div></div></div>
+              </div>
+            </div>
+            <div style="background:var(--green-dim);border:1px solid rgba(13,158,110,0.2);border-radius:8px;padding:1rem;margin-bottom:1.25rem;font-size:0.82rem;color:var(--green);font-weight:600">
+              ✅ Rekomendasikan untuk pembiayaan s.d. <strong style="font-size:1rem">Rp 150.000.000</strong> — berdasarkan analisis arus kas 5 bulan terakhir
+            </div>
+          </div>
+          <div class="cert-footer">
+            <div class="qr-placeholder">📱<p>QR Verifikasi</p></div>
+            <div class="cert-footer-text">
+              <h5>Verifikasi Keaslian Sertifikat</h5>
+              <p>Scan QR code atau kunjungi <strong>verify.pilar.id</strong> untuk memverifikasi keaslian sertifikat ini secara real-time. Sertifikat tercatat permanen di blockchain PILAR.</p>
+              <div class="hash" style="margin-top:0.5rem">BLOCK HASH: 0x4f8e2a1b9c3d7f6e5a2b8c4d1e9f3a7b2c8d4e6f1a9b3c7d5e2f8a4b6c9d3e7f1a</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: ATESTASI (AKUNTAN) ── -->
+      <div id="view-atestasi" class="page-body hidden">
+        <div class="section-header">
+          <div><h3>Formulir Atestasi Digital</h3><p>Standar ISAE 3000 · Lengkapi form untuk menerbitkan SKKD</p></div>
+        </div>
+        <div class="progress-steps" style="margin-bottom:1.75rem">
+          <div class="ps-item">
+            <div class="ps-num done">✓</div>
+            <span class="ps-label done-label">Review Data AI</span>
+          </div>
+          <div class="ps-line done"></div>
+          <div class="ps-item">
+            <div class="ps-num done">✓</div>
+            <span class="ps-label done-label">Rekonsiliasi</span>
+          </div>
+          <div class="ps-line done"></div>
+          <div class="ps-item">
+            <div class="ps-num active">3</div>
+            <span class="ps-label active">Atestasi</span>
+          </div>
+          <div class="ps-line"></div>
+          <div class="ps-item">
+            <div class="ps-num todo">4</div>
+            <span class="ps-label">Terbitkan SKKD</span>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card col-span-2">
+            <div class="card-header"><h4>Form Atestasi Akuntan Publik</h4><div class="sub mono">PILAR/ATTES/2026/05/0031 · ISAE 3000</div></div>
+            <div class="card-pad">
+              <div class="form-section">
+                <h5>Identitas Akuntan Validator</h5>
+                <div class="form-row">
+                  <div class="form-field"><div class="fl">Nama Akuntan Publik</div><input class="form-input" value="Ir. Drs. Ahmad Fauzi, CPA" readonly></div>
+                  <div class="form-field"><div class="fl">No. Izin IAI / PPPK</div><input class="form-input" value="IAI/CPA/2021/07743" readonly></div>
+                </div>
+                <div class="form-row">
+                  <div class="form-field"><div class="fl">KAP (Kantor Akuntan Publik)</div><input class="form-input" value="KAP Fauzi, Santoso & Rekan"></div>
+                  <div class="form-field"><div class="fl">Tanggal Atestasi</div><input class="form-input" type="date" value="2026-05-03"></div>
+                </div>
+              </div>
+              <div class="form-section">
+                <h5>Informasi Subjek Atestasi</h5>
+                <div class="form-row">
+                  <div class="form-field"><div class="fl">Nama Usaha UMKM</div><input class="form-input" value="Warung Bu Siti" readonly></div>
+                  <div class="form-field"><div class="fl">NIB / ID Merchant QRIS</div><input class="form-input" value="1234567890123456 / 8812-3047" readonly></div>
+                </div>
+                <div class="form-row">
+                  <div class="form-field"><div class="fl">Periode Laporan</div><input class="form-input" value="Januari 2026 — Mei 2026"></div>
+                  <div class="form-field"><div class="fl">Standar yang Digunakan</div>
+                    <select class="form-input form-select">
+                      <option selected>SAK EMKM (IAI, Rev. 2018)</option>
+                      <option>SAK ETAP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="form-section">
+                <h5>Opini Profesional Akuntan</h5>
+                <div class="opinion-opts" id="opinionOpts">
+                  <div class="opinion-opt selected wtp" onclick="selectOpinion(this,'wtp')">✓ Wajar Tanpa Pengecualian (WTP)</div>
+                  <div class="opinion-opt" onclick="selectOpinion(this,'qm')">◎ Wajar Dengan Pengecualian</div>
+                  <div class="opinion-opt" onclick="selectOpinion(this,'aw')">✕ Tidak Memberikan Opini</div>
+                </div>
+                <div style="margin-top:1rem">
+                  <div class="fl" style="font-size:0.72rem;font-weight:700;color:var(--text-2);margin-bottom:0.4rem">Catatan Akuntan (opsional)</div>
+                  <textarea class="form-textarea" placeholder="Temuan, pengecualian, atau catatan penting lainnya...">Laporan keuangan menyajikan secara wajar, dalam semua hal yang material, posisi keuangan Warung Bu Siti per 31 Mei 2026, serta kinerja keuangan untuk periode yang berakhir pada tanggal tersebut, sesuai dengan SAK EMKM.</textarea>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;gap:0.75rem;padding-top:1rem;border-top:1px solid var(--border)">
+                <button class="btn-sm btn-outline">Simpan Draf</button>
+                <button class="btn-sm btn-green" onclick="alert('Atestasi berhasil dikunci di blockchain PILAR!\nSKKD akan diterbitkan dalam 5 menit.')">⛓ Kunci Atestasi di Blockchain & Terbitkan SKKD</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: BLOCKCHAIN ── -->
+      <div id="view-blockchain" class="page-body hidden">
+        <div class="section-header">
+          <div><h3>Audit Trail Blockchain</h3><p>Immutable ledger · Tidak dapat dimanipulasi sepihak · Semua pihak dapat verifikasi</p></div>
+          <span class="badge status-validated" style="padding:0.4rem 0.9rem">⛓ Block #4,872,341 — Synced</span>
+        </div>
+        <div class="grid-2">
+          <div class="card col-span-2">
+            <div class="card-header"><h4>Log Transaksi Blockchain PILAR</h4><div class="sub mono">Network: PILAR-Mainnet · Consensus: Proof of Authority</div></div>
+            <div id="blockchainLedger">
+              <div class="ledger-entry">
+                <div class="chain-dot confirmed"></div>
+                <div class="ledger-meta">
+                  <h5>Atestasi Akuntan Dikunci</h5>
+                  <p>Akuntan: Ir. Drs. Ahmad Fauzi, CPA · Opini: WTP · SKKD diterbitkan untuk Warung Bu Siti</p>
+                  <div class="ledger-hash" style="margin-top:0.4rem">0x4f8e2a1b9c3d7f6e5a2b8c4d1e9f3a7b2c8d4e6f1a9b3c7d5e2f8a4b6c9d3e7f1a</div>
+                  <p style="margin-top:0.35rem;font-size:0.68rem;color:var(--text-4)">03 Mei 2026 · 14:52:31 WIB · Block #4,872,341</p>
+                </div>
+                <span class="badge status-validated">Confirmed</span>
+              </div>
+              <div class="ledger-entry">
+                <div class="chain-dot confirmed"></div>
+                <div class="ledger-meta">
+                  <h5>Laporan Keuangan Divalidasi</h5>
+                  <p>Draft AI Laba Rugi Mei 2026 — diperiksa dan disetujui validator · Rekonsiliasi 250/250 transaksi selesai</p>
+                  <div class="ledger-hash" style="margin-top:0.4rem">0xa3c9e4b2d7f1a8c5e2b9d4f7a1c8e5b3d9f2a6c4e8b1d5f9a3c7e2b8d6f4a2c8e1</div>
+                  <p style="margin-top:0.35rem;font-size:0.68rem;color:var(--text-4)">03 Mei 2026 · 14:30:12 WIB · Block #4,872,298</p>
+                </div>
+                <span class="badge status-validated">Confirmed</span>
+              </div>
+              <div class="ledger-entry">
+                <div class="chain-dot confirmed"></div>
+                <div class="ledger-meta">
+                  <h5>Anomali Ditandai oleh AI</h5>
+                  <p>Transaksi TRX-002, TRX-003, TRX-006 diidentifikasi anomali — dikirim ke akuntan validator untuk review</p>
+                  <div class="ledger-hash" style="margin-top:0.4rem">0xb7d3f9c1e5a2b8d4f6a9c3e7b1d8f4a2c6e9b3d7f1a5c2e8b4d9f7a3c1e6b2d8f4</div>
+                  <p style="margin-top:0.35rem;font-size:0.68rem;color:var(--text-4)">03 Mei 2026 · 13:25:07 WIB · Block #4,872,215</p>
+                </div>
+                <span class="badge status-anomaly">Flagged</span>
+              </div>
+              <div class="ledger-entry">
+                <div class="chain-dot confirmed"></div>
+                <div class="ledger-meta">
+                  <h5>Data QRIS Batch Diterima</h5>
+                  <p>250 transaksi QRIS ditangkap via API Bank Indonesia — pre-klasifikasi AI dimulai</p>
+                  <div class="ledger-hash" style="margin-top:0.4rem">0xd5a1c8e3b9f7d2a6c4e8b2d9f3a7c1e5b8d4f9a2c6e3b7d1f5a9c2e8b4d7f2a1c9</div>
+                  <p style="margin-top:0.35rem;font-size:0.68rem;color:var(--text-4)">01 Mei 2026 · 00:01:05 WIB · Block #4,869,100</p>
+                </div>
+                <span class="badge status-validated">Confirmed</span>
+              </div>
+              <div class="ledger-entry">
+                <div class="chain-dot confirmed"></div>
+                <div class="ledger-meta">
+                  <h5>SKKD April 2026 Diterbitkan</h5>
+                  <p>Sertifikat kelayakan keuangan Warung Bu Siti untuk periode Februari–April 2026 berhasil diterbitkan</p>
+                  <div class="ledger-hash" style="margin-top:0.4rem">0xe1b4d8f2a9c3e7b1d5f8a4c9e2b6d3f7a1c8e4b2d9f5a7c3e1b8d4f6a2c9e3b7d1</div>
+                  <p style="margin-top:0.35rem;font-size:0.68rem;color:var(--text-4)">30 Apr 2026 · 17:44:22 WIB · Block #4,868,799</p>
+                </div>
+                <span class="badge status-validated">Confirmed</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: REKONSILIASI ── -->
+      <div id="view-rekonsiliasi" class="page-body hidden">
+        <div class="section-header">
+          <div><h3>Tabel Rekonsiliasi</h3><p>Perbandingan data QRIS vs deklarasi UMKM · Diferensi ditandai otomatis</p></div>
+          <button class="btn-sm btn-orange" onclick="showView('atestasi')">Lanjut ke Atestasi →</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><h4>Rekonsiliasi Arus Kas — Mei 2026</h4><div class="sub">3 perbedaan terdeteksi · Perlu konfirmasi akuntan</div></div>
+          <table class="data-table">
+            <thead>
+              <tr><th>Pos</th><th>Data QRIS (IoT)</th><th>Deklarasi UMKM</th><th>Selisih</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight:600">Total Pendapatan</td>
+                <td class="amount mono">Rp 48.700.000</td>
+                <td class="amount mono">Rp 48.700.000</td>
+                <td><span class="diff-cell diff-positive">Rp 0</span></td>
+                <td><span class="badge status-validated">Match</span></td>
+              </tr>
+              <tr style="background:rgba(220,38,38,0.03)">
+                <td style="font-weight:600">Pembelian Bahan Baku</td>
+                <td class="amount mono">Rp 18.750.000</td>
+                <td class="amount mono">Rp 21.200.000</td>
+                <td><span class="diff-cell diff-negative">−Rp 2.450.000</span></td>
+                <td><span class="badge status-anomaly">Selisih</span></td>
+              </tr>
+              <tr>
+                <td style="font-weight:600">Beban Sewa</td>
+                <td class="amount mono">Rp 1.800.000</td>
+                <td class="amount mono">Rp 1.800.000</td>
+                <td><span class="diff-cell diff-positive">Rp 0</span></td>
+                <td><span class="badge status-validated">Match</span></td>
+              </tr>
+              <tr style="background:rgba(220,38,38,0.03)">
+                <td style="font-weight:600">Transfer Tidak Dikenal</td>
+                <td class="amount mono">Rp 5.000.000</td>
+                <td class="amount mono">Rp 0</td>
+                <td><span class="diff-cell diff-negative">+Rp 5.000.000</span></td>
+                <td><span class="badge status-anomaly">Anomali</span></td>
+              </tr>
+              <tr>
+                <td style="font-weight:600">Beban Gaji</td>
+                <td class="amount mono">Rp 4.500.000</td>
+                <td class="amount mono">Rp 4.500.000</td>
+                <td><span class="diff-cell diff-positive">Rp 0</span></td>
+                <td><span class="badge status-validated">Match</span></td>
+              </tr>
+              <tr style="background:rgba(220,38,38,0.03)">
+                <td style="font-weight:600">Laba Bersih</td>
+                <td class="amount mono" style="color:var(--green)">Rp 22.387.500</td>
+                <td class="amount mono" style="color:var(--green)">Rp 19.937.500</td>
+                <td><span class="diff-cell diff-negative">+Rp 2.450.000</span></td>
+                <td><span class="badge status-anomaly">Perlu Klarifikasi</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="padding:1.25rem 1.5rem;background:var(--amber-dim);border-top:1px solid rgba(217,119,6,0.2)">
+            <p style="font-size:0.8rem;color:var(--amber);font-weight:600">⚠ Catatan Rekonsiliasi: Terdapat 3 pos dengan selisih material. Akuntan wajib memperoleh klarifikasi dari UMKM sebelum menerbitkan atestasi. Transfer tidak dikenal senilai Rp5.000.000 harus dijelaskan sumbernya.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: GEOMAP UMKM ── -->
+      <div id="view-geomap" class="hidden" style="display:none;flex-direction:column;height:calc(100vh - 62px)">
+        <!-- GeoMap Topbar Controls -->
+        <div class="geo-controls-bar">
+          <div class="geo-search-wrap">
+            <span class="geo-search-icon">🔍</span>
+            <input type="search" class="geo-search-input" id="geoSearch" placeholder="Cari lokasi, NIB, atau nama UMKM..." oninput="filterUMKM(this.value)">
+          </div>
+          <div class="geo-filter-group">
+            <label class="geo-filter-chip active" data-filter="all" onclick="setFilter(this,'all')">
+              <span class="fc-dot" style="background:#888"></span>Semua
+            </label>
+            <label class="geo-filter-chip" data-filter="sehat" onclick="setFilter(this,'sehat')">
+              <span class="fc-dot" style="background:#0d9e6e"></span>Sangat Sehat
+            </label>
+            <label class="geo-filter-chip" data-filter="proses" onclick="setFilter(this,'proses')">
+              <span class="fc-dot" style="background:#0284c7"></span>Proses Verifikasi
+            </label>
+            <label class="geo-filter-chip" data-filter="informal" onclick="setFilter(this,'informal')">
+              <span class="fc-dot" style="background:#d97706"></span>Informal
+            </label>
+          </div>
+          <div class="geo-map-type-group">
+            <button class="geo-type-btn active" onclick="setMapType(this,'street')">🗺 Peta</button>
+            <button class="geo-type-btn" onclick="setMapType(this,'satellite')">🛰 Satelit</button>
+            <button class="geo-type-btn" onclick="setMapType(this,'topo')">⛰ Topografi</button>
+          </div>
+          <div class="geo-stats-chips">
+            <span class="geo-stat-chip"><span style="color:var(--green)">●</span> <strong id="statSehat">847</strong> Sehat</span>
+            <span class="geo-stat-chip"><span style="color:var(--sky)">●</span> <strong id="statProses">213</strong> Proses</span>
+            <span class="geo-stat-chip"><span style="color:var(--amber)">●</span> <strong id="statInformal">156</strong> Informal</span>
+          </div>
+        </div>
+
+        <!-- Map + Sidebar Layout -->
+        <div class="geo-body">
+          <!-- Sidebar List -->
+          <aside class="geo-sidebar">
+            <div class="geo-sidebar-header">
+              <h4>Daftar UMKM Terverifikasi</h4>
+              <span class="geo-count mono" id="geoListCount">1.216 UMKM</span>
+            </div>
+            <div class="geo-sidebar-sort">
+              <select class="geo-select" onchange="sortUMKM(this.value)">
+                <option value="nama">Urutkan: Nama A–Z</option>
+                <option value="sektor">Urutkan: Sektor</option>
+                <option value="nilai">Urutkan: Nilai Kredit</option>
+                <option value="status">Urutkan: Status</option>
+              </select>
+            </div>
+            <div class="geo-list" id="geoList">
+              <!-- Injected by JS -->
+            </div>
+          </aside>
+
+          <!-- Map Canvas -->
+          <div class="geo-map-wrap">
+            <div id="geoMap"></div>
+            <!-- Zoom Controls -->
+            <div class="geo-zoom-controls">
+              <button class="geo-zoom-btn" onclick="mapZoom(1)">+</button>
+              <button class="geo-zoom-btn" onclick="mapZoom(-1)">−</button>
+              <button class="geo-zoom-btn" onclick="mapReset()" title="Reset ke tampilan nasional">⌖</button>
+            </div>
+            <!-- Legend -->
+            <div class="geo-legend">
+              <div class="geo-legend-title">Status Keuangan</div>
+              <div class="geo-legend-item"><span class="marker-dot" style="background:#0d9e6e"></span>Laporan Terstandar (Sangat Sehat)</div>
+              <div class="geo-legend-item"><span class="marker-dot" style="background:#0284c7"></span>Dalam Proses Verifikasi Akuntan</div>
+              <div class="geo-legend-item"><span class="marker-dot" style="background:#d97706"></span>Catatan Informal / Belum Terstandar</div>
+              <div class="geo-legend-divider"></div>
+              <div class="geo-legend-item" style="font-size:0.65rem;color:var(--text-4)">📍 Klik marker untuk detail UMKM</div>
+            </div>
+            <!-- Data source tag -->
+            <div class="geo-datasource">
+              ⛓ Data immutable · PROTAGOV × BAST × GPS Real-time · <span class="mono" style="font-size:0.65rem">03 Mei 2026, 14:37 WIB</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Popup Info Window (hidden by default) -->
+        <div class="geo-popup-overlay hidden" id="geoPopup">
+          <article class="geo-popup-card" id="geoPopupCard">
+            <div class="geo-popup-header">
+  <div class="geo-popup-status" id="popupStatusBadge"></div>
+  <!-- Pastikan ada onclick="closePopup()" di sini -->
+  <button class="geo-popup-close" onclick="closePopup()">✕</button>
+</div><div class="geo-popup-body">
+              <div class="geo-popup-icon" id="popupIcon">🏪</div>
+              <div>
+                <h3 class="geo-popup-name" id="popupName">Warung Bu Siti</h3>
+                <p class="geo-popup-meta" id="popupMeta">NIB · Kategori</p>
+              </div>
+            </div>
+            <div class="geo-popup-grid">
+              <div class="geo-popup-kv">
+                <span class="geo-popup-label">Koordinat GPS</span>
+                <span class="geo-popup-val mono" id="popupCoords">—</span>
+              </div>
+              <div class="geo-popup-kv">
+                <span class="geo-popup-label">Sektor Usaha</span>
+                <span class="geo-popup-val" id="popupSektor">—</span>
+              </div>
+              <div class="geo-popup-kv">
+                <span class="geo-popup-label">Omzet Bulanan</span>
+                <span class="geo-popup-val mono" id="popupOmzet">—</span>
+              </div>
+              <div class="geo-popup-kv">
+                <span class="geo-popup-label">Skor Kredit PILAR</span>
+                <span class="geo-popup-val" id="popupSkor">—</span>
+              </div>
+              <div class="geo-popup-kv">
+                <span class="geo-popup-label">Akuntan Pemeriksa</span>
+                <span class="geo-popup-val" id="popupAkuntan">—</span>
+              </div>
+              <div class="geo-popup-kv">
+                <span class="geo-popup-label">Terverifikasi Fisik</span>
+                <span class="geo-popup-val" id="popupVerif">—</span>
+              </div>
+            </div>
+            <div class="geo-popup-summary" id="popupSummary">
+              Ringkasan laporan keuangan tersedia setelah login Fintech/Akuntan.
+            </div>
+            <div class="geo-popup-actions">
+              <button class="btn-sm btn-primary" onclick="showView('laporan')">📄 View Full Report</button>
+              <button class="btn-sm btn-outline" onclick="showView('skkd')">🏅 Sertifikat SKKD</button>
+              <button class="btn-sm btn-outline" style="margin-left:auto;font-size:0.68rem;color:var(--text-3)" id="popupHashBtn">⛓ Verify on Chain</button>
+            </div>
+          </article>
+        </div>
+      </div><!-- end view-geomap -->
+
+    </div><!-- end main-content -->
+  </div><!-- end app-shell -->
+</div><!-- end page-dashboard -->
+
+<script>
+/* ═══════════════════════════════════════
+   1. STATE & LOGIN SYSTEM
+═══════════════════════════════════════ */
+let currentRole = 'umkm';
+let currentView = 'dashboard';
+let selectedId = null;
+
+function selectRole(btn) {
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentRole = btn.dataset.role;
+  const labels = {
+    umkm: 'NIB / ID Merchant QRIS',
+    akuntan: 'No. Izin IAI / PPPK',
+    lembaga: 'Kode Institusi / NPWP Badan'
+  };
+  document.getElementById('idFieldLabel').textContent = labels[currentRole];
+}
+
+function showMFA() {
+  document.getElementById('mfaModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('otp1').focus(), 100);
+}
+
+function otpNext(el, nextId) {
+  if (el.value) { el.classList.add('filled'); document.getElementById(nextId).focus(); }
+}
+
+function verifyOTP() {
+  const btn = document.getElementById('verifyBtn');
+  btn.innerHTML = '<span class="loading-spinner"></span> Memverifikasi...';
+  btn.disabled = true;
+  setTimeout(() => {
+    document.getElementById('mfaModal').classList.add('hidden');
+    gotoApp();
+  }, 1000);
+}
+
+function gotoApp() {
+  const configs = {
+    umkm:    { name:'Warung Bu Siti', id:'QRIS-8812', avatar:'WS', badge:'umkm', badgeText:'● UMKM' },
+    akuntan: { name:'Ir. Drs. Ahmad Fauzi', id:'IAI-0774', avatar:'AF', badge:'akuntan', badgeText:'● Akuntan' },
+    lembaga: { name:'Bank BRI', id:'BANK-001', avatar:'BR', badge:'lembaga', badgeText:'● Lembaga' }
+  };
+  const c = configs[currentRole];
+  
+  // Update Topbar
+  document.getElementById('topbarAvatar').textContent = c.avatar;
+  document.getElementById('topbarName').textContent = c.name;
+  document.getElementById('topbarRole').textContent = c.badgeText;
+  
+  // Navigasi Otomatis berdasarkan Role
+  showPage('page-dashboard');
+  if (currentRole === 'akuntan') showView('atestasi');
+  else if (currentRole === 'lembaga') showView('lembaga');
+  else showView('dashboard');
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showView(id) {
+  document.querySelectorAll('[id^="view-"]').forEach(v => { v.classList.add('hidden'); v.style.display = ''; });
+  const target = document.getElementById('view-' + id);
+  if (!target) return;
+
+  if (id === 'geomap') {
+    target.classList.remove('hidden');
+    target.style.display = 'flex';
+    setTimeout(initGeoMap, 100);
+  } else {
+    target.classList.remove('hidden');
+  }
+  
+  if (id === 'dashboard') initCharts();
+}
+
+function doLogout() { location.reload(); }
+
+/* ═══════════════════════════════════════
+   2. GEOMAP SYSTEM (LEAFLET)
+═══════════════════════════════════════ */
+let leafletMap = null;
+let markerLayer = null;
+let currentTileLayer = null;
+
+const UMKM_DATA = [
+  { id:'U001', name:'Warung Bu Siti', sektor:'Makanan', status:'sehat', icon:'🏪', lat:-6.2088, lng:106.8456, summary:'Laporan verified.' },
+  { id:'U002', name:'Batik Larasati', sektor:'Tekstil', status:'sehat', icon:'🧵', lat:-7.7970, lng:110.3705, summary:'Ekspor aktif.' },
+  { id:'U004', name:'Koperasi Tani', sektor:'Pertanian', status:'proses', icon:'🌾', lat:-6.9175, lng:107.6191, summary:'Proses atestasi.' }
+];
+
+function statusColor(s) { return s === 'sehat' ? '#0d9e6e' : s === 'proses' ? '#0284c7' : '#d97706'; }
+
+function initGeoMap() {
+  renderGeoList();
+  renderGeoMap();
+}
+
+function renderGeoList() {
+  const list = document.getElementById('geoList');
+  if (!list) return;
+  list.innerHTML = UMKM_DATA.map(u => `
+    <div class="geo-list-item ${selectedId === u.id ? 'active' : ''}" onclick="selectMarker('${u.id}')">
+      <strong>${u.icon} ${u.name}</strong><br><small>${u.sektor}</small>
+    </div>
+  `).join('');
+}
+
+function renderGeoMap() {
+  if (!leafletMap) {
+    document.getElementById('geoMap').innerHTML = '';
+    leafletMap = L.map('geoMap', { zoomControl: false }).setView([-2.5, 118.0], 5);
+    currentTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(leafletMap);
+  }
+  if (markerLayer) leafletMap.removeLayer(markerLayer);
+  markerLayer = L.layerGroup().addTo(leafletMap);
+
+  UMKM_DATA.forEach(u => {
+    const circle = L.circleMarker([u.lat, u.lng], {
+      radius: selectedId === u.id ? 12 : 8,
+      fillColor: statusColor(u.status), color: '#fff', weight: 2, fillOpacity: 0.9
+    }).addTo(markerLayer);
+    circle.on('click', (e) => { L.DomEvent.stopPropagation(e); selectMarker(u.id); });
+  });
+}
+
+function selectMarker(id) {
+  selectedId = id;
+  const u = UMKM_DATA.find(x => x.id === id);
+  if (!u) return;
+
+  document.getElementById('popupName').textContent = u.name;
+  document.getElementById('popupCoords').textContent = `${u.lat}, ${u.lng}`;
+  document.getElementById('popupSummary').textContent = u.summary;
+  document.getElementById('geoPopup').classList.remove('hidden');
+  
+  leafletMap.flyTo([u.lat, u.lng], 10);
+  renderGeoMap();
+  renderGeoList();
+}
+
+function closePopup() {
+  document.getElementById('geoPopup').classList.add('hidden');
+  selectedId = null;
+  leafletMap.flyTo([-2.5, 118.0], 5);
+  renderGeoMap();
+  renderGeoList();
+}
+
+function setMapType(el, type) {
+  document.querySelectorAll('.geo-type-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  if(currentTileLayer) leafletMap.removeLayer(currentTileLayer);
+  let url = type === 'satellite' ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}' : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+  currentTileLayer = L.tileLayer(url).addTo(leafletMap);
+}
+
+function mapZoom(dir) { if(leafletMap) leafletMap.setZoom(leafletMap.getZoom() + dir); }
+
+/* ═══════════════════════════════════════
+   3. CHARTS SYSTEM
+═══════════════════════════════════════ */
+function initCharts() {
+  const chart = document.getElementById('cashflowChart');
+  if (!chart || chart.children.length > 0) return;
+  const inData = [35, 42, 55, 38, 62, 70, 58, 45, 80, 87];
+  const outData = [22, 28, 35, 25, 40, 45, 38, 30, 52, 55];
+  
+  inData.forEach((v, i) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = `flex:1; position:relative; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center;`;
+    
+    const b1 = document.createElement('div'); // In
+    b1.style.cssText = `width:70%; background:var(--navy); height:${v}%; border-radius:2px 2px 0 0;`;
+    
+    const b2 = document.createElement('div'); // Out
+    b2.style.cssText = `width:70%; background:var(--orange); height:${outData[i]}%; position:absolute; bottom:0; opacity:0.8; border-radius:2px 2px 0 0;`;
+    
+    wrap.appendChild(b1);
+    wrap.appendChild(b2);
+    chart.appendChild(wrap);
+  });
+}
+</script>
+</body>
+</html>
