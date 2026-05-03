@@ -681,14 +681,84 @@ body {
 .laporan-row.profit .name { color: var(--green); font-weight: 700; }
 .laporan-row.profit .val { color: var(--green); font-weight: 800; }
 
+/* ════════════════════════════════════════════
+   MOBILE SIDEBAR SYSTEM
+════════════════════════════════════════════ */
+
+/* Hamburger button — hidden on desktop */
+.sidebar-toggle {
+  display: none;
+  align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--bg); border: 1px solid var(--border);
+  cursor: pointer; font-size: 1.1rem;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.sidebar-toggle:hover { background: var(--navy-pale); border-color: var(--border-2); }
+
+/* Overlay backdrop */
+.sidebar-backdrop {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(61,47,20,0.45);
+  backdrop-filter: blur(2px);
+  z-index: 199;
+  animation: fadeIn 0.2s ease;
+}
+.sidebar-backdrop.open { display: block; }
+
 /* Responsive */
-@media(max-width:900px){
-  #page-login{ flex-direction:column }
-  .login-left{ width:100%; min-height:auto; padding:2rem }
-  .login-right{ padding:2rem }
-  .stats-row{ grid-template-columns:1fr 1fr }
-  .sidebar{ display:none }
-  .grid-2,.grid-3{ grid-template-columns:1fr }
+@media (max-width: 900px) {
+  /* Login */
+  #page-login { flex-direction: column }
+  .login-left { width: 100%; min-height: auto; padding: 2rem }
+  .login-right { padding: 2rem }
+
+  /* Cards & Grids */
+  .stats-row { grid-template-columns: 1fr 1fr }
+  .grid-2, .grid-3 { grid-template-columns: 1fr }
+
+  /* Sidebar — off-canvas drawer */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+    width: 270px;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 40px rgba(61,47,20,0.25);
+  }
+
+  /* Show hamburger button */
+  .sidebar-toggle { display: flex; }
+
+  /* Topbar adjustments */
+  .topbar {
+    padding: 0.75rem 1rem;
+    gap: 0.75rem;
+  }
+  .topbar-title h2 { font-size: 0.88rem; }
+  .topbar-title p { font-size: 0.65rem; }
+  .user-dropdown-info { display: none; }
+  .user-dropdown-caret { display: none; }
+
+  /* Page body */
+  .page-body { padding: 1.25rem 1rem; }
+}
+
+@media (max-width: 600px) {
+  .stats-row { grid-template-columns: 1fr }
+  .login-left .hero-login h1 { font-size: 1.75rem; }
+  .login-stats { display: none; }
+  .cert-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .progress-steps { overflow-x: auto; }
 }
 
 /* ════════════════════════════════════════════
@@ -1097,8 +1167,11 @@ body {
      PAGE 2: DASHBOARD UMKM
 ══════════════════════════════════════════ -->
 <div id="page-dashboard" class="page">
+  <!-- Mobile sidebar backdrop -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
   <div class="app-shell">
-    <aside class="sidebar">
+    <aside class="sidebar" id="appSidebar">
       <div class="sidebar-logo">
         <div class="box">
   <img src="logo-pilar.png" alt="Logo PILAR" style="width: 100%; height: 100%; object-fit: contain;">
@@ -1128,14 +1201,7 @@ body {
         <button class="nav-item" onclick="showView('blockchain')"><span class="icon">⛓️</span>Audit Trail</button>
       </div>
       <div class="sidebar-footer">
-        <div class="sidebar-user-mini">
-          <div class="sidebar-user-avatar" id="sidebarAvatarMini">WS</div>
-          <div class="sidebar-user-info">
-            <span class="sidebar-user-name" id="sidebarName">Warung Bu Siti</span>
-            <span class="sidebar-user-id mono" id="sidebarId">QRIS-ID: 8812-3047</span>
-            <div class="role-badge umkm" id="sidebarBadge">● UMKM</div>
-          </div>
-        </div>
+       
         <button class="logout-btn" onclick="doLogout()">
           <span>🚪</span> Keluar
         </button>
@@ -1145,6 +1211,7 @@ body {
     <div class="main-content">
       <!-- TOPBAR -->
       <div class="topbar">
+        <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Buka menu">&#9776;</button>
         <div class="topbar-title">
           <h2 id="pageTitle">Dashboard IoT Cashflow</h2>
           <p id="pageSubtitle">Pembaruan real-time · Senin, 03 Mei 2026 · 14:37 WIB</p>
@@ -2087,6 +2154,39 @@ function showView(id) {
 }
 
 function doLogout() { location.reload(); }
+
+/* ═══════════════════════════════════════
+   MOBILE SIDEBAR TOGGLE
+═══════════════════════════════════════ */
+function toggleSidebar() {
+  const sidebar = document.getElementById('appSidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const isOpen = sidebar.classList.contains('open');
+  if (isOpen) {
+    closeSidebar();
+  } else {
+    sidebar.classList.add('open');
+    backdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeSidebar() {
+  const sidebar = document.getElementById('appSidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  sidebar.classList.remove('open');
+  backdrop.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Auto-close sidebar when nav item clicked on mobile
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 900) closeSidebar();
+    });
+  });
+});
 
 /* ═══════════════════════════════════════
    2. GEOMAP SYSTEM (LEAFLET)
