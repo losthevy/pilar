@@ -1405,32 +1405,58 @@ function showSplash() {
 </div>
         <span class="txt">PILAR</span>
       </div>
-      <div class="nav-section">
-        <div class="nav-section-label">Utama</div>
-        <button class="nav-item active" onclick="showView('dashboard')"><span class="icon">📊</span>Dashboard Utama</button>
-        <div id="umkmOnlyNav">
-          <button class="nav-item" onclick="showView('laporan')"><span class="icon">📄</span>Laporan Laba Rugi<span class="nav-badge green">BARU</span></button>
-          <button class="nav-item" onclick="showView('validasi')"><span class="icon">🤖</span>Status Validasi AI<span class="nav-badge red">3</span></button>
-          <button class="nav-item" onclick="showView('skkd')"><span class="icon">🏅</span>Sertifikat SKKD</button>
-          <button class="nav-item" onclick="showView('geomap')"><span class="icon">🗺️</span>Peta UMKM<span class="nav-badge" style="background:var(--sky)">BARU</span></button>
-        </div>
+
+      <!-- Role card — diupdate saat login -->
+      <div class="sidebar-role" id="sidebarRoleCard">
+        <strong id="sidebarRoleName">—</strong>
+        <div style="font-size:0.68rem;color:rgba(255,255,255,0.45)" id="sidebarRoleId">—</div>
+        <span class="role-badge" id="sidebarRoleBadge">—</span>
       </div>
-      <div class="nav-section" id="akuntanNav" style="display:none">
-        <div class="nav-section-label">Akuntan</div>
-        <button class="nav-item" onclick="showView('atestasi')"><span class="icon">✍️</span>Atestat Keuangan<span class="nav-badge">12</span></button>
-        <button class="nav-item" onclick="showView('blockchain')"><span class="icon">⛓️</span>Audit Blockchain</button>
-        <button class="nav-item" onclick="showView('rekonsiliasi')"><span class="icon">🔄</span>Rekonsiliasi</button>
+
+      <!-- ── NAV: UMKM ── -->
+      <div class="nav-section" id="navUMKM" style="display:none">
+        <div class="nav-section-label">Dashboard</div>
+        <button class="nav-item" data-view="dashboard" onclick="showView('dashboard')"><span class="icon">📊</span>Dashboard Keuangan</button>
+        <div class="nav-section-label" style="margin-top:0.75rem">Laporan & Validasi</div>
+        <button class="nav-item" data-view="laporan" onclick="showView('laporan')"><span class="icon">📄</span>Laporan Laba Rugi<span class="nav-badge green">SAK EMKM</span></button>
+        <button class="nav-item" data-view="validasi" onclick="showView('validasi')"><span class="icon">🤖</span>Validasi AI &amp; Anomali<span class="nav-badge red">3</span></button>
+        <div class="nav-section-label" style="margin-top:0.75rem">Sertifikasi</div>
+        <button class="nav-item" data-view="skkd" onclick="showView('skkd')"><span class="icon">🏅</span>Sertifikat SKKD</button>
+        <div class="nav-section-label" style="margin-top:0.75rem">Ekosistem</div>
+        <button class="nav-item" data-view="geomap" onclick="showView('geomap')"><span class="icon">🗺️</span>Peta UMKM<span class="nav-badge" style="background:var(--sky)">BARU</span></button>
+        <button class="nav-item" data-view="blockchain" onclick="showView('blockchain')"><span class="icon">⛓️</span>Audit Trail Blockchain</button>
       </div>
-      <div class="nav-section" id="lembagaNav" style="display:none">
-        <div class="nav-section-label">Lembaga Keuangan</div>
-        <button class="nav-item active" onclick="showView('lembaga')"><span class="icon">🏦</span>Portofolio Kredit</button>
-        <button class="nav-item" onclick="showView('geomap')"><span class="icon">🗺️</span>Peta UMKM<span class="nav-badge" style="background:var(--sky)">BARU</span></button>
-        <button class="nav-item" onclick="showView('blockchain')"><span class="icon">⛓️</span>Audit Trail</button>
+
+      <!-- ── NAV: AKUNTAN ── -->
+      <div class="nav-section" id="navAkuntan" style="display:none">
+        <div class="nav-section-label">Rekonsiliasi</div>
+        <button class="nav-item" data-view="rekonsiliasi" onclick="showView('rekonsiliasi')"><span class="icon">🔄</span>Rekonsiliasi Otomatis</button>
+        <div class="nav-section-label" style="margin-top:0.75rem">Atestasi</div>
+        <button class="nav-item" data-view="atestasi" onclick="showView('atestasi')"><span class="icon">✍️</span>Atestasi Digital<span class="nav-badge">12 Antrian</span></button>
+        <div class="nav-section-label" style="margin-top:0.75rem">Laporan UMKM</div>
+        <button class="nav-item" data-view="laporan" onclick="showView('laporan')"><span class="icon">📄</span>Laporan Laba Rugi</button>
+        <button class="nav-item" data-view="validasi" onclick="showView('validasi')"><span class="icon">🤖</span>Status Validasi AI<span class="nav-badge red">3</span></button>
+        <button class="nav-item" data-view="skkd" onclick="showView('skkd')"><span class="icon">🏅</span>Sertifikat SKKD</button>
+        <div class="nav-section-label" style="margin-top:0.75rem">Infrastruktur</div>
+        <button class="nav-item" data-view="blockchain" onclick="showView('blockchain')"><span class="icon">⛓️</span>Audit Trail Blockchain</button>
+        <button class="nav-item" data-view="geomap" onclick="showView('geomap')"><span class="icon">🗺️</span>Peta UMKM Terverifikasi</button>
       </div>
+
+      <!-- ── NAV: LEMBAGA KEUANGAN ── -->
+      <div class="nav-section" id="navLembaga" style="display:none">
+        <div class="nav-section-label">Portofolio</div>
+        <button class="nav-item" data-view="lembaga" onclick="showView('lembaga')"><span class="icon">🏦</span>Dashboard Portofolio</button>
+        <button class="nav-item" data-view="geomap" onclick="showView('geomap')"><span class="icon">🗺️</span>Peta UMKM Terverifikasi<span class="nav-badge" style="background:var(--sky)">BARU</span></button>
+        <div class="nav-section-label" style="margin-top:0.75rem">Due Diligence</div>
+        <button class="nav-item" data-view="skkd" onclick="showView('skkd')"><span class="icon">🏅</span>Sertifikat SKKD</button>
+        <button class="nav-item" data-view="laporan" onclick="showView('laporan')"><span class="icon">📄</span>Laporan Laba Rugi</button>
+        <div class="nav-section-label" style="margin-top:0.75rem">Kepatuhan</div>
+        <button class="nav-item" data-view="blockchain" onclick="showView('blockchain')"><span class="icon">⛓️</span>Audit Trail Blockchain</button>
+      </div>
+
       <div class="sidebar-footer">
-       
         <button class="logout-btn" onclick="doLogout()">
-          <span>🚪</span> Keluar
+          <span>🚪</span> Keluar dari PILAR
         </button>
       </div>
     </aside>
@@ -2341,22 +2367,42 @@ function verifyOTP() {
 
 function gotoApp() {
   const configs = {
-    umkm:    { name:'Warung Bu Siti', id:'QRIS-8812', avatar:'WS', badge:'umkm', badgeText:'● UMKM' },
-    akuntan: { name:'Ir. Drs. Ahmad Fauzi', id:'IAI-0774', avatar:'AF', badge:'akuntan', badgeText:'● Akuntan' },
-    lembaga: { name:'Bank BRI', id:'BANK-001', avatar:'BR', badge:'lembaga', badgeText:'● Lembaga' }
+    umkm:    { name:'Warung Bu Siti',        id:'QRIS-ID: 8812-3047',   avatar:'WS', badge:'umkm',    badgeText:'● UMKM',    defaultView:'dashboard' },
+    akuntan: { name:'Ir. Drs. Ahmad Fauzi',  id:'IAI No. 0774/PA/2023', avatar:'AF', badge:'akuntan', badgeText:'● Akuntan Publik', defaultView:'atestasi' },
+    lembaga: { name:'Bank BRI — Divisi UMKM',id:'BANK-001 / BRI',       avatar:'BR', badge:'lembaga', badgeText:'● Lembaga Keuangan', defaultView:'lembaga' }
   };
   const c = configs[currentRole];
-  
-  // Update Topbar
+
+  // ── Update Topbar ──
   document.getElementById('topbarAvatar').textContent = c.avatar;
   document.getElementById('topbarName').textContent = c.name;
   document.getElementById('topbarRole').textContent = c.badgeText;
-  
-  // Navigasi Otomatis berdasarkan Role
+
+  // ── Update Sidebar Role Card ──
+  document.getElementById('sidebarRoleName').textContent = c.name;
+  document.getElementById('sidebarRoleId').textContent = c.id;
+  const badge = document.getElementById('sidebarRoleBadge');
+  badge.textContent = c.badgeText;
+  badge.className = 'role-badge ' + c.badge;
+
+  // ── Update Dropdown (jika ada) ──
+  const dnAvatar = document.getElementById('dropdownAvatarLg');
+  const dnName   = document.getElementById('dropdownFullName');
+  const dnId     = document.getElementById('dropdownUserId');
+  const dnBadge  = document.getElementById('dropdownRoleBadge');
+  if (dnAvatar) dnAvatar.textContent = c.avatar;
+  if (dnName)   dnName.textContent   = c.name;
+  if (dnId)     dnId.textContent     = c.id;
+  if (dnBadge)  { dnBadge.textContent = c.badgeText; dnBadge.className = 'role-badge ' + c.badge; }
+
+  // ── Tampilkan Nav Section yang sesuai, sembunyikan yang lain ──
+  document.getElementById('navUMKM').style.display    = currentRole === 'umkm'    ? '' : 'none';
+  document.getElementById('navAkuntan').style.display = currentRole === 'akuntan' ? '' : 'none';
+  document.getElementById('navLembaga').style.display = currentRole === 'lembaga' ? '' : 'none';
+
+  // ── Navigasi ke View default Role ──
   showPage('page-dashboard');
-  if (currentRole === 'akuntan') showView('atestasi');
-  else if (currentRole === 'lembaga') showView('lembaga');
-  else showView('dashboard');
+  showView(c.defaultView);
 }
 
 function showPage(id) {
@@ -2376,7 +2422,30 @@ function showView(id) {
   } else {
     target.classList.remove('hidden');
   }
-  
+
+  // ── Update nav item aktif ──
+  document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll(`.nav-item[data-view="${id}"]`).forEach(btn => btn.classList.add('active'));
+
+  // ── Update topbar title ──
+  const titles = {
+    dashboard:    ['Dashboard IoT Cashflow',              'Data real-time dari API QRIS Bank Indonesia'],
+    laporan:      ['Laporan Laba Rugi',                   'Generate otomatis · Standar SAK EMKM · IAI'],
+    validasi:     ['Validasi AI & Deteksi Anomali',       'Confidence score per transaksi · 3 anomali terdeteksi'],
+    skkd:         ['Sertifikat Kelayakan Keuangan (SKKD)','Blockchain-verified · PILAR-Mainnet · Proof of Authority'],
+    geomap:       ['Peta UMKM Terverifikasi',             'Data geospasial IoT · Leaflet.js · Mei 2026'],
+    blockchain:   ['Audit Trail Blockchain',              'Immutable log · PILAR-Mainnet · Proof of Authority'],
+    atestasi:     ['Atestasi Digital Akuntan',            'Standar ISAE 3000 · 12 dokumen menunggu penandatanganan'],
+    rekonsiliasi: ['Rekonsiliasi Otomatis',               'Perbandingan Data QRIS vs Deklarasi UMKM · Mei 2026'],
+    lembaga:      ['Dashboard Portofolio Lembaga',        'Data SKKD blockchain-verified · Analisis risiko real-time'],
+  };
+  const t = titles[id] || ['PILAR', ''];
+  const el = document.getElementById('pageTitle');
+  const el2 = document.getElementById('pageSubtitle');
+  if (el)  el.textContent  = t[0];
+  if (el2) el2.textContent = t[1];
+
+  currentView = id;
   if (id === 'dashboard') initCharts();
 }
 
@@ -2520,6 +2589,62 @@ function initCharts() {
     chart.appendChild(wrap);
   });
 }
+
+/* ─── Fungsi pendukung yang direferensikan di HTML ─── */
+function otpLast(el) { if (el.value) el.classList.add('filled'); }
+
+function mapReset() { if (leafletMap) leafletMap.setView([-2.5, 118.0], 5); }
+
+function toggleUserDropdown() {
+  const menu    = document.getElementById('userDropdownMenu');
+  const trigger = document.getElementById('userDropdownTrigger');
+  const caret   = document.getElementById('userDropdownCaret');
+  const isOpen  = !menu.classList.contains('hidden');
+  if (isOpen) {
+    menu.classList.add('hidden');
+    trigger.classList.remove('open');
+    if (caret) caret.classList.remove('rotated');
+  } else {
+    menu.classList.remove('hidden');
+    trigger.classList.add('open');
+    if (caret) caret.classList.add('rotated');
+  }
+}
+
+function closeDropdownThen(fn) {
+  const menu    = document.getElementById('userDropdownMenu');
+  const trigger = document.getElementById('userDropdownTrigger');
+  const caret   = document.getElementById('userDropdownCaret');
+  menu.classList.add('hidden');
+  trigger.classList.remove('open');
+  if (caret) caret.classList.remove('rotated');
+  if (fn) fn();
+}
+
+// Tutup dropdown saat klik di luar
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('userDropdownWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    const menu = document.getElementById('userDropdownMenu');
+    const trigger = document.getElementById('userDropdownTrigger');
+    const caret = document.getElementById('userDropdownCaret');
+    if (menu) menu.classList.add('hidden');
+    if (trigger) trigger.classList.remove('open');
+    if (caret) caret.classList.remove('rotated');
+  }
+});
+
+// Enter shortcut untuk login
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const mfaModal = document.getElementById('mfaModal');
+    if (mfaModal && !mfaModal.classList.contains('hidden')) {
+      verifyOTP();
+    } else if (document.getElementById('page-login').classList.contains('active')) {
+      showMFA();
+    }
+  }
+});
 </script>
 </body>
 </html>
